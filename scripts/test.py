@@ -1,21 +1,8 @@
 # -*- coding: utf-8 -*-
-# @Time    : 2022-09-08 15:55
+# @Time    : 2022-09-08 18:20
 # @Author  : young wang
-# @FileName: usat_simulation.py
+# @FileName: test.py
 # @Software: PyCharm
-
-"""
-Simulated aberrated USAF resolution target image
-with 3rd-order Zernike polynomials baesd on
-
-Dan Zhu, Ruoyan Wang, Mantas Žurauskas,
-Paritosh Pande, Jinci Bi, Qun Yuan, Lingjie Wang,
-Zhishan Gao, and Stephen A. Boppart,
-"Automated fast computational adaptive optics for
-optical coherence tomography based
-on a stochastic parallel gradient descent algorithm,"
-Opt. Express 28, 23306-23319 (2020)
-"""
 
 import numpy as np
 # import pyfits

@@ -30,7 +30,7 @@ def heatmap(data, ax=None,
 
     ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
     ax.tick_params(which="minor", bottom=False, left=False)
-    ax.set_title('std: %.2f' % np.std(data), y=0, pad=-14)
+    # ax.set_title('std: %.2f' % np.std(data), y=0, pad=-14)
     ax.xaxis.set_label_position('top')
     # ax.set_xlabel('std: %.2f' % np.std(data))
     # ax.set_title('Manual y', y=1.0, pad=-14)
