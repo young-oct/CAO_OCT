@@ -23,12 +23,7 @@ import matplotlib.pyplot as plt
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
-from tools.plot import heatmap
-from matplotlib.ticker import LinearLocator
-
-import matplotlib
-from matplotlib import cm
-import cv2 as cv
+from scripts.tools.plot import heatmap
 import numpy as np
 from skimage.util import random_noise
 from skimage.color import rgb2gray
@@ -36,7 +31,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 import cv2 as cv
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
-
 from natsort import natsorted
 import glob
 
@@ -69,7 +63,6 @@ def Zernike_plane(coefficients, img):
     z_plane = Zernike_polar(coefficients, r_idx, theta_idx)
     z_plane[r_idx > r] = 0
     return preprocessing.normalize(z_plane)
-
 
 if __name__ == '__main__':
     matplotlib.rcParams.update(
@@ -119,7 +112,21 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(int(len(img_list) // 2), int(len(img_list) // 2),
                             figsize=(10, 10), constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
-        ax.imshow(image)
-        ax.set_title(title)
-        ax.set_axis_off()
+
+        if n == 3:
+            heatmap(image,ax)
+        else:
+            ax.imshow(image)
+            ax.set_title(title)
+            ax.set_axis_off()
     plt.show()
+
+    z_dist = np.exp(complex(0,-1) * img_zphase)
+
+
+    temp_fft = img_fft * z_dist
+    # # #
+    # img_dist = np.fft.ifft2(temp_fft)
+    # plt.imshow(20*np.log(abs(img_dist)))
+    # plt.show()
+
