@@ -74,8 +74,8 @@ def angle_est(x, y, origin, radius, ax):
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 
     textstr = '\n'.join((
-        r'$\theta_2=%.2f$' % (angle_1,),
-        r'$\theta_2=%.2f$' % (angle_2,)))
+        radius'$\theta_2=%.2f$' % (angle_1,),
+        radius'$\theta_2=%.2f$' % (angle_2,)))
 
     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
             verticalalignment='top', bbox=props)

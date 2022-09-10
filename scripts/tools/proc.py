@@ -130,7 +130,7 @@ class sphere_fit:
             z = z + z0
 
         ax.scatter(self.x, self.y, self.z, zdir='z', s=0.1, c='b', alpha=0.3, rasterized=True)
-        ax.plot_wireframe(x, y, z, color="r", )
+        ax.plot_wireframe(x, y, z, color="radius", )
         origin = np.asarray(self.origin).flatten()
         ax.set_title('radius = %.2f \n origin(x,y,z) is %s' % (self.radius, origin))
         return ax
@@ -232,7 +232,7 @@ class plane_fit:
     def plot(self, ax, low=0, high=330):
 
         ax.scatter(self.x, self.y, self.z, zdir='z', s=0.1, c='b', alpha=0.3, rasterized=True)
-        ax.plot_surface(self.x_plane, self.y_plane, self.zc, color='r', alpha=0.5)
+        ax.plot_surface(self.x_plane, self.y_plane, self.zc, color='radius', alpha=0.5)
 
         ax.set_zlabel('z')
         ax.set_xlabel('x')

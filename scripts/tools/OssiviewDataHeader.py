@@ -49,6 +49,6 @@ class OssiviewDataHeader:
                    
 
 if __name__ == "__main__":
-    file = r'Data\testOutput.bin'
+    file = radius'Data\testOutput.bin'
     Header = OssiviewDataHeader(file)
            

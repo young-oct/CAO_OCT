@@ -64,6 +64,25 @@ def Zernike_plane(coefficients, img):
     z_plane[r_idx > r] = 0
     return preprocessing.normalize(z_plane)
 
+
+def ft2(g):
+    G = fftshift(fft2(ifftshift(g)))
+    return G
+
+
+def ift2(G):
+    g = fftshift(ifft2(ifftshift(G)))
+    return g
+
+
+def conv2(g1, g2):
+    G1 = ft2(g1)
+    G2 = ft2(g2)
+    G_out = G1 * G2
+
+    g_out = ift2(G_out)
+    return g_out
+
 if __name__ == '__main__':
     matplotlib.rcParams.update(
         {
@@ -76,13 +95,12 @@ if __name__ == '__main__':
 
     coefficients = np.zeros(8)
     coefficients[1] = 0.1
-    coefficients[2] = 0.1
-    coefficients[3] = 0.3
-    coefficients[4] = 0.2
-    coefficients[5] = 0.8
-    coefficients[6] = 0.3
-    coefficients[7] = 0.2
-
+    coefficients[2] = 0
+    coefficients[3] = 0.2
+    coefficients[4] = 0
+    # coefficients[5] = 0.8
+    # coefficients[6] = 0.3
+    # coefficients[7] = 0.2
     img_list = []
     title_list = []
 
@@ -121,12 +139,10 @@ if __name__ == '__main__':
             ax.set_axis_off()
     plt.show()
 
-    z_dist = np.exp(complex(0,-1) * img_zphase)
+    phase = np.exp(complex(0,1) * 2*np.pi*img_zphase)
+    psf = fftshift(fft2(fftshift(phase)))
+    psf_abs = abs(psf) ** 2
+    psf_abs = psf_abs/np.max(psf_abs)
 
-
-    temp_fft = img_fft * z_dist
-    # # #
-    # img_dist = np.fft.ifft2(temp_fft)
-    # plt.imshow(20*np.log(abs(img_dist)))
-    # plt.show()
-
+    plt.imshow(20*np.log10(psf_abs))
+    plt.show()
