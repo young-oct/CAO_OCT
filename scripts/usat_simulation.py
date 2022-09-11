@@ -17,21 +17,9 @@ on a stochastic parallel gradient descent algorithm,"
 Opt. Express 28, 23306-23319 (2020)
 """
 
-import numpy as np
 from scipy.special import gamma, factorial
-from scipy.special import gamma, factorial
-
-import matplotlib.pyplot as plt
-from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
-import numpy as np
-from skimage.color import rgb2gray
-import matplotlib
-import cv2 as cv
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
-import glob
-import matplotlib.pyplot as plt
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
-from sklearn import preprocessing
 from scripts.tools.plot import heatmap
 import numpy as np
 from skimage.util import random_noise
@@ -39,7 +27,6 @@ from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
 import matplotlib
 import cv2 as cv
-from natsort import natsorted
 import glob
 
 def zernike_index(j, k):
