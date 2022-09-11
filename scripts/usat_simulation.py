@@ -93,14 +93,15 @@ def aberrate(img, abe_coes, D=102.4):
     zernike_plane = zernike_plane/np.max(zernike_plane)
 
     W_complex = np.exp(complex(0, 1) * 2 * np.pi * W)
-    # W_complex_for = np.exp(complex(0,-1) * 2 * np.pi * W)
+    W_complex_x = np.exp(complex(0,-1) * 2 * np.pi * W)
 
     P = circ(img, D) * W_complex
+    Px = circ(img, D) * W_complex_x
 
     psf = normalize_psf(P)
     img_ab = myconv2(img, psf)
 
-    return zernike_plane,psf,normalize_image(img_ab)
+    return zernike_plane,psf,normalize_image(img_ab),W_complex_x,Px
 
 
 def myconv2(img, psf):
@@ -167,7 +168,7 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, psf,aberrated_img= aberrate(img_gray, abe_coes, D=80)
+    zernike_plane, psf,aberrated_img, W_complex_for,Px= aberrate(img_gray, abe_coes, D=80)
     img_list.append(aberrated_img)
     title_list.append('aberrated image')
 
@@ -193,4 +194,3 @@ if __name__ == '__main__':
             ax.set_title(title)
             ax.set_axis_off()
     plt.show()
-
