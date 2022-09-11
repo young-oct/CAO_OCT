@@ -34,7 +34,6 @@ def heatmap(data, ax=None,
     ax.xaxis.set_label_position('top')
     # ax.set_xlabel('std: %.2f' % np.std(data))
     # ax.set_title('Manual y', y=1.0, pad=-14)
-
     return im, cbar
 
 def line_fit_plot(points,l_txt, ax, order = 1):
@@ -53,52 +52,6 @@ def line_fit_plot(points,l_txt, ax, order = 1):
 
     return ax
 
-def angle_est(x, y, origin, radius, ax):
-    xmin_idx, xmax_idx = x[0], x[-1]
-    ymin, ymax = y[0], y[-1]
-    xc, yc = origin[0], origin[1]
-
-    x_mid = index_mid(x)
-    y_mid = index_mid(y)
-
-    x_line = [xc, x_mid]
-    y_line = [yc, y_mid]
-
-    ax.plot(xmin_idx, ymin, color='green', label='x1', marker='8', ms=5)
-    ax.plot(xmax_idx, ymax, color='blue', label='x2', marker='8', ms=5)
-    ax.plot(x_mid, y_mid, color='red', label='xc', marker='D', ms=5)
-    ax.plot(x_line, y_line, color='red', linestyle ='dashed', linewidth = 1)
-
-    angle_1 = np.degrees(np.arcsin(abs(xc - xmin_idx) / radius))
-    angle_2 = np.degrees(np.arcsin(abs(xc - xmax_idx) / radius))
-    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-
-    textstr = '\n'.join((
-        radius'$\theta_2=%.2f$' % (angle_1,),
-        radius'$\theta_2=%.2f$' % (angle_2,)))
-
-    ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-            verticalalignment='top', bbox=props)
-
-    # ax.annotate('x1', xy=(xmin_idx, ymin), xycoords='data',
-    #             xytext=(xmin_idx - radius / 4, ymin + radius / 4), textcoords='data',
-    #             arrowprops=dict(facecolor='black', shrink=0.05),
-    #             horizontalalignment='right', verticalalignment='top',
-    #             )
-    #
-    # ax.annotate('x2', xy=(xmax_idx, ymax), xycoords='data',
-    #             xytext=(xmax_idx + radius / 4, ymax + radius / 4), textcoords='data',
-    #             arrowprops=dict(facecolor='black', shrink=0.05),
-    #             horizontalalignment='right', verticalalignment='top',
-    #             )
-    #
-    # ax.annotate('xc', xy=(x_mid, y_mid), xycoords='data',
-    #             xytext=(x_mid + radius / 4, y_mid + radius / 4), textcoords='data',
-    #             arrowprops=dict(facecolor='black', shrink=0.05),
-    #             horizontalalignment='right', verticalalignment='top',
-    #             )
-
-    return ax
 
 def linear_fit_plot(line_list, ax, title):
     x,y = zip(*line_list)

@@ -18,10 +18,19 @@ Opt. Express 28, 23306-23319 (2020)
 """
 
 import numpy as np
-# import pyfits
+from scipy.special import gamma, factorial
+from scipy.special import gamma, factorial
+
 import matplotlib.pyplot as plt
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
+import numpy as np
+from skimage.color import rgb2gray
+import matplotlib
+import cv2 as cv
+from numpy.fft import fftshift, ifftshift, fft2, ifft2
+import glob
 import matplotlib.pyplot as plt
+from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
 from sklearn import preprocessing
 from scripts.tools.plot import heatmap
 import numpy as np
@@ -30,58 +39,107 @@ from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
 import matplotlib
 import cv2 as cv
-from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
 from natsort import natsorted
 import glob
 
-
-def Zernike_polar(coefficients, radius, theta):
-    z = coefficients
-
-    z1 = z[0] * 1 * (np.cos(theta) ** 2 + np.sin(theta) ** 2)
-    z2 = z[1] * 2 * radius * np.cos(theta)
-    z3 = z[2] * 2 * radius * np.sin(theta)
-    z4 = z[3] * np.sqrt(3) * (2 * radius ** 2 - 1)
-    z5 = z[4] * np.sqrt(6) * radius ** 2 * np.sin(2 * theta)
-    z6 = z[5] * np.sqrt(6) * radius ** 2 * np.cos(2 * theta)
-    z7 = z[6] * np.sqrt(8) * (3 * radius ** 2 - 2) * radius * np.sin(theta)
-    z8 = z[7] * np.sqrt(8) * (3 * radius ** 2 - 2) * radius * np.cos(theta)
-
-    zw = z1 + z2 + z3 + z4 + z5 + z6 + z7 + z8  # +  Z9+ Z10+ Z11+ Z12+ Z13+ Z14+ Z15+ Z16+ Z17+ Z18+ Z19+Z20+ Z21+ Z22+ Z23+ Z24+ Z25+ Z26+ Z27+ Z28+ Z29+Z30+ Z31+ Z32+ Z33+ Z34+ Z35+ Z36+ Z37
-    return zw
+def zernike_index(j, k):
+    j = j - 1
+    n = np.floor(-1 + np.sqrt(8 * j) / 2)
+    i = j - n * (n - 1) / 2 + 1
+    m = i - np.mod(n + i, 2)
+    l = np.power(-1, k * m)
+    return m, l
 
 
-def Zernike_plane(coefficients, img):
-    x_len, y_len = img.shape
+def zernike(noll_no, r, theta):
+    n, m = zernike_index(noll_no, noll_no + 1)
 
-    r = 1  # create unit circle
-
-    [x_idx, y_idx] = np.meshgrid(np.linspace(-r, r, x_len), np.linspace(-r, r, y_len))
-    r_idx = np.sqrt(x_idx ** 2 + y_idx ** 2)
-    theta_idx = np.arctan2(y_idx, x_idx)
-
-    z_plane = Zernike_polar(coefficients, r_idx, theta_idx)
-    z_plane[r_idx > r] = 0
-    return preprocessing.normalize(z_plane)
-
-
-def ft2(g):
-    G = fftshift(fft2(ifftshift(g)))
-    return G
+    if int(n) == -1:
+        zernike_poly = np.zeros(r.shape)
+    else:
+        if m == 0:
+            zernike_poly = np.sqrt(n + 1) * zernike_radial(n, 0, r)
+        else:
+            if np.mod(m, 2) == 0:
+                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, 0, r) * np.cos(m * theta)
+            else:
+                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, 0, r) * np.sin(m * theta)
+    return zernike_poly
 
 
-def ift2(G):
-    g = fftshift(ifft2(ifftshift(G)))
-    return g
+def zernike_radial(n, m, r):
+    R = 0
+    for s in range(int(np.ptp(np.arange((n - m) / 2)))):
+        num = np.power(-1, s) * gamma(n - s + 1)
+        denom = gamma(s + 1) * gamma((n + m) / 2 - s + 1) \
+                * gamma((n - m) / 2 - s + 1)
+
+        R = R + num / denom * np.power(r, (n - 2 * s))
+    return R
+
+def normalize_psf(psf):
+    h = ft2(psf)
+    psf_norm = abs(h) ** 2
+    return psf_norm/np.max(psf_norm)
+
+def normalize_image(image):
+    return abs(image) / np.max(abs(image))
+
+def aberrate(img, abe_coes, D=102.4):
+    N = img.shape[0]
+
+    img = img/np.max(img)
+    [x, y] = np.meshgrid(np.linspace(-N // 2, N // 2 + 1, N),
+                         np.linspace(-N // 2, N // 2 + 1, N))
+
+    r = np.sqrt(x ** 2 + y ** 2)
+    theta = np.arctan2(y, x)
+
+    z = np.copy(abe_coes)
+    W_values = np.zeros((r.shape[0], r.shape[-1], z.shape[-1]))
+    for i in range(z.shape[-1]):
+        W_values[:, :, i] = z[i] * zernike(int(i + 1),
+                                           2 * r / D, theta)
+    W = np.sum(W_values, axis=-1)
+
+    zernike_plane = circ(img, D) * W
+    zernike_plane = zernike_plane/np.max(zernike_plane)
+
+    W_complex = np.exp(complex(0, 1) * 2 * np.pi * W)
+    # W_complex_for = np.exp(complex(0,-1) * 2 * np.pi * W)
+
+    P = circ(img, D) * W_complex
+
+    psf = normalize_psf(P)
+    img_ab = myconv2(img, psf)
+
+    return zernike_plane,psf,normalize_image(img_ab)
 
 
-def conv2(g1, g2):
-    G1 = ft2(g1)
-    G2 = ft2(g2)
-    G_out = G1 * G2
+def myconv2(img, psf):
+    return abs(ift2(ft2(img) * ft2(psf)))
 
-    g_out = ift2(G_out)
-    return g_out
+def ift2(f):
+    return ifftshift(ifft2(ifftshift(f)))
+
+def ft2(f):
+    return fftshift(fft2(fftshift(f)))
+
+def circ(x, pupil):
+    pupil_plane = np.empty_like(x)
+    x_cent, y_cent = x.shape[0] // 2, x.shape[1] // 2
+    for i in range(pupil_plane.shape[0]):
+        for j in range(pupil_plane.shape[1]):
+            if np.sqrt((i - x_cent) ** 2 + (j - y_cent) ** 2) <= pupil:
+
+                pupil_plane[i, j] = 1
+            else:
+                pupil_plane[i, j] = 0
+
+    return pupil_plane
+
+np.seterr(divide = 'ignore')
+
 
 if __name__ == '__main__':
     matplotlib.rcParams.update(
@@ -93,14 +151,19 @@ if __name__ == '__main__':
         }
     )
 
-    coefficients = np.zeros(8)
-    coefficients[1] = 0.1
-    coefficients[2] = 0
-    coefficients[3] = 0.2
-    coefficients[4] = 0
-    # coefficients[5] = 0.8
-    # coefficients[6] = 0.3
-    # coefficients[7] = 0.2
+    abe_coes = np.empty(11)
+    abe_coes[0] = 0  # piston
+    abe_coes[1] = 1  # x tilt
+    abe_coes[2] = 0.1  # y tilt
+    abe_coes[3] = 0.1  # defocus
+    abe_coes[4] = 0.1  # y primary astigmatism
+    abe_coes[5] = 0.1  # x primary astigmatism
+    abe_coes[5] = 0  # y primary coma
+    abe_coes[7] = 0  # x primary coma
+    abe_coes[8] = 0  # y trefoil
+    abe_coes[9] = 0  # x trefoil
+    abe_coes[10] = 0.2  # primary spherical
+
     img_list = []
     title_list = []
 
@@ -108,8 +171,8 @@ if __name__ == '__main__':
     img = cv.imread(image_plist[-1])
     img_gray = rgb2gray(img)
 
-    img_list.append(img_gray)
-    title_list.append('original image')
+    # img_list.append(img_gray)
+    # title_list.append('original image')
 
     img_noise = random_noise(img_gray, mode='gaussian', var=0.005)
     img_noise = random_noise(img_noise, mode='speckle', var=0.1)
@@ -117,32 +180,30 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
+    zernike_plane, psf,aberrated_img= aberrate(img_gray, abe_coes, D=80)
+    img_list.append(aberrated_img)
+    title_list.append('aberrated image')
+
     img_fft = np.fft.fftshift(np.fft.fft2(img_noise))
     img_fft_log = 20 * np.log10(abs(img_fft))
 
     img_list.append(img_fft_log)
     title_list.append('fft image')
 
-    img_zphase = Zernike_plane(coefficients, img_fft_log)
-    img_list.append(img_zphase)
+    img_list.append(zernike_plane)
     title_list.append('Zernike plane')
 
-    fig, axs = plt.subplots(int(len(img_list) // 2), int(len(img_list) // 2),
+    fig, axs = plt.subplots(2, 2,
                             figsize=(10, 10), constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
         if n == 3:
             heatmap(image,ax)
+            ax.set_title(title)
+
         else:
             ax.imshow(image)
             ax.set_title(title)
             ax.set_axis_off()
     plt.show()
 
-    phase = np.exp(complex(0,1) * 2*np.pi*img_zphase)
-    psf = fftshift(fft2(fftshift(phase)))
-    psf_abs = abs(psf) ** 2
-    psf_abs = psf_abs/np.max(psf_abs)
-
-    plt.imshow(20*np.log10(psf_abs))
-    plt.show()
