@@ -179,7 +179,7 @@ if __name__ == '__main__':
     zernike_plane, aberrated_img, Px\
         = aberrate(img_gray,abe_coes, D=102)
     img_list.append(aberrated_img)
-    title_list.append('aberrated image')
+    title_list.append('aberrant image')
 
     img_fft = np.fft.fftshift(np.fft.fft2(img_noise))
     img_fft_log = 20 * np.log10(abs(img_fft))
