@@ -16,7 +16,10 @@ optical coherence tomography based
 on a stochastic parallel gradient descent algorithm,"
 Opt. Express 28, 23306-23319 (2020)
 """
-
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator
+import numpy as np
 from scipy.special import gamma, factorial
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
@@ -29,40 +32,35 @@ import matplotlib
 import cv2 as cv
 import glob
 
-def zernike_index(j, k):
-    j = j - 1
-    n = np.floor(-1 + np.sqrt(8 * j) / 2)
-    i = j - n * (n - 1) / 2 + 1
-    m = i - np.mod(n + i, 2)
-    l = np.power(-1, k * m)
-    return m, l
+def aberrate(img=None,abe_coes = None,D=None ):
+    N = 512
+    img = img/np.max(img)
+    [x, y] = np.meshgrid(np.linspace(-N / 2, N / 2, N),
+                         np.linspace(-N / 2, N / 2, N))
 
+    r = np.sqrt(x ** 2 + y ** 2)
+    theta = np.arctan2(y, x)
 
-def zernike(noll_no, r, theta):
-    n, m = zernike_index(noll_no, noll_no + 1)
+    z = np.copy(abe_coes)
 
-    if int(n) == -1:
-        zernike_poly = np.zeros(r.shape)
-    else:
-        if m == 0:
-            zernike_poly = np.sqrt(n + 1) * zernike_radial(n, 0, r)
-        else:
-            if np.mod(m, 2) == 0:
-                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, 0, r) * np.cos(m * theta)
-            else:
-                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, 0, r) * np.sin(m * theta)
-    return zernike_poly
+    W_values = np.zeros((r.shape[0], r.shape[-1], z.shape[-1]))
+    for i in range(z.shape[-1]):
+        W_values[:, :, i] = z[i] * zernike(int(i + 1),
+                                           2 * r / D, theta)
+    W = np.sum(W_values, axis=-1)
 
+    zernike_plane = circ(x, D) * W
+    zernike_plane = zernike_plane/np.max(zernike_plane)
 
-def zernike_radial(n, m, r):
-    R = 0
-    for s in range(int(np.ptp(np.arange((n - m) / 2)))):
-        num = np.power(-1, s) * gamma(n - s + 1)
-        denom = gamma(s + 1) * gamma((n + m) / 2 - s + 1) \
-                * gamma((n - m) / 2 - s + 1)
+    P = circ(x, D) * np.exp(complex(0, 1) * 2 * np.pi * W)
+    Px = np.exp(complex(0, -1) * 2 * np.pi * W)
 
-        R = R + num / denom * np.power(r, (n - 2 * s))
-    return R
+    psf = normalize_psf(P)
+
+    # zernike_plane = circ(x, D) * W
+    # z_plane = zernike_plane/np.max(zernike_plane)
+
+    return zernike_plane,normalize_image(myconv2(psf, img)), Px
 
 def normalize_psf(psf):
     h = ft2(psf)
@@ -72,49 +70,50 @@ def normalize_psf(psf):
 def normalize_image(image):
     return abs(image) / np.max(abs(image))
 
-def aberrate(img, abe_coes, D=102.4):
-    N = img.shape[0]
-
-    img = img/np.max(img)
-    [x, y] = np.meshgrid(np.linspace(-N // 2, N // 2 + 1, N),
-                         np.linspace(-N // 2, N // 2 + 1, N))
-
-    r = np.sqrt(x ** 2 + y ** 2)
-    theta = np.arctan2(y, x)
-
-    z = np.copy(abe_coes)
-    W_values = np.zeros((r.shape[0], r.shape[-1], z.shape[-1]))
-    for i in range(z.shape[-1]):
-        W_values[:, :, i] = z[i] * zernike(int(i + 1),
-                                           2 * r / D, theta)
-    W = np.sum(W_values, axis=-1)
-
-    zernike_plane = circ(img, D) * W
-    zernike_plane = zernike_plane/np.max(zernike_plane)
-
-    W_complex = np.exp(complex(0, 1) * 2 * np.pi * W)
-    W_complex_x = np.exp(complex(0,-1) * 2 * np.pi * W)
-
-    P = circ(img, D) * W_complex
-    Px = circ(img, D) * W_complex_x
-
-    psf = normalize_psf(P)
-    img_ab = myconv2(img, psf)
-
-    return zernike_plane,psf,normalize_image(img_ab),W_complex_x,Px
-
-
-def myconv2(img, psf):
-    return abs(ift2(ft2(img) * ft2(psf)))
-
-def ift2(f):
-    return ifftshift(ifft2(ifftshift(f)))
-
 def ft2(f):
-    return fftshift(fft2(fftshift(f)))
+    g = fftshift(fft2(fftshift(f)))
+    return g
 
-def circ(x, pupil):
-    pupil_plane = np.empty_like(x)
+
+def myconv2(img=None, psf=None):
+    C = ift2(ft2(img)* ft2(psf))
+    return C
+
+
+def ift2(f=None):
+    g = ifftshift(ifft2(ifftshift(f)))
+    return g
+
+
+def zernike_index(j=None, k=None):
+    j = j - 1
+    n = int(np.floor((- 1 + np.sqrt(8 * j + 1)) / 2))
+    i = j - n * (n + 1) / 2 + 1
+    m = i - np.mod(n + i, 2)
+    l = np.power(-1, k) * m
+    return n, l
+
+
+def zernike(i: object = None, r: object = None, theta: object = None) -> object:
+    n, m = zernike_index(i, i + 1)
+
+    if n == -1:
+        zernike_poly = np.zeros(r.shape)
+    else:
+        if m == 0:
+            zernike_poly = np.sqrt(n + 1) * zernike_radial(n, 0, r)
+        else:
+            if np.mod(i, 2) == 0:
+                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, m, r) * np.cos(m * theta)
+            else:
+                zernike_poly = np.sqrt(2 * (n + 1)) * zernike_radial(n, m, r) * np.sin(m * theta)
+
+    return zernike_poly
+
+
+def circ(x=None, pupil=None):
+
+    pupil_plane = np.zeros(x.shape)
     x_cent, y_cent = x.shape[0] // 2, x.shape[1] // 2
     for i in range(pupil_plane.shape[0]):
         for j in range(pupil_plane.shape[1]):
@@ -126,8 +125,17 @@ def circ(x, pupil):
 
     return pupil_plane
 
-np.seterr(divide = 'ignore')
 
+def zernike_radial(n=None, m=None, r=None):
+    R = 0
+    for s in np.arange(0, ((n - m) / 2) + 1):
+        num = np.power(-1, s) * gamma(n - s + 1)
+        denom = gamma(s + 1) * \
+                gamma((n + m) / 2 - s + 1) * \
+                gamma((n - m) / 2 - s + 1)
+        R = R + num / denom * r ** (n - 2 * s)
+
+    return R
 
 if __name__ == '__main__':
     matplotlib.rcParams.update(
@@ -139,18 +147,18 @@ if __name__ == '__main__':
         }
     )
 
-    abe_coes = np.empty(11)
+    abe_coes = np.zeros(11)
     abe_coes[0] = 0  # piston
-    abe_coes[1] = 1  # x tilt
+    abe_coes[1] = 0  # x tilt
     abe_coes[2] = 0.1  # y tilt
-    abe_coes[3] = 0.1  # defocus
+    abe_coes[3] = 0  # defocus
     abe_coes[4] = 0.1  # y primary astigmatism
     abe_coes[5] = 0.1  # x primary astigmatism
     abe_coes[5] = 0  # y primary coma
     abe_coes[7] = 0  # x primary coma
     abe_coes[8] = 0  # y trefoil
-    abe_coes[9] = 0  # x trefoil
-    abe_coes[10] = 0.2  # primary spherical
+    abe_coes[9] = 0.2  # x trefoil
+    abe_coes[10] = 0  # primary spherical
 
     img_list = []
     title_list = []
@@ -168,7 +176,8 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, psf,aberrated_img, W_complex_for,Px= aberrate(img_gray, abe_coes, D=80)
+    zernike_plane, aberrated_img, Px\
+        = aberrate(img_gray,abe_coes, D=102)
     img_list.append(aberrated_img)
     title_list.append('aberrated image')
 
@@ -190,7 +199,14 @@ if __name__ == '__main__':
             ax.set_title(title)
 
         else:
-            ax.imshow(image)
+            ax.imshow(image,'gray')
             ax.set_title(title)
             ax.set_axis_off()
     plt.show()
+
+    ### TBD steps
+
+    # ab_fft = fftshift(fft2(fftshift(aberrated_img))) * Px
+    # abr_img = fftshift(ifft2(fftshift(ab_fft)))
+    # plt.imshow(abs(abr_img), 'gray')
+    # plt.show()
