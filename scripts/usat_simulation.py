@@ -98,7 +98,7 @@ def zernike(i: object = None, r: object = None, theta: object = None) -> object:
     n, m = zernike_index(i, i + 1)
 
     if n == -1:
-        zernike_poly = np.zeros(r.shape)
+        zernike_poly = np.ones(r.shape)
     else:
         if m == 0:
             zernike_poly = np.sqrt(n + 1) * zernike_radial(n, 0, r)
@@ -148,16 +148,16 @@ if __name__ == '__main__':
     )
 
     abe_coes = np.zeros(11)
-    abe_coes[0] = 0  # piston
+    abe_coes[0] = 1  # piston
     abe_coes[1] = 0  # x tilt
-    abe_coes[2] = 0.1  # y tilt
+    abe_coes[2] = 0  # y tilt
     abe_coes[3] = 0  # defocus
-    abe_coes[4] = 0.1  # y primary astigmatism
-    abe_coes[5] = 0.1  # x primary astigmatism
+    abe_coes[4] = 0  # y primary astigmatism
+    abe_coes[5] = 0  # x primary astigmatism
     abe_coes[5] = 0  # y primary coma
     abe_coes[7] = 0  # x primary coma
     abe_coes[8] = 0  # y trefoil
-    abe_coes[9] = 0.2  # x trefoil
+    abe_coes[9] = 0  # x trefoil
     abe_coes[10] = 0  # primary spherical
 
     img_list = []
