@@ -73,8 +73,6 @@ def myconv2(img=None, psf=None):
     C = ifft2(fft2(img) * fft2(psf))
     return C
 
-
-
 def zernike_index(j=None, k=None):
     j = j - 1
     n = int(np.floor((- 1 + np.sqrt(8 * j + 1)) / 2))
@@ -195,7 +193,12 @@ if __name__ == '__main__':
             ax.set_axis_off()
     plt.show()
 
+    # apply wavefront to the image in frequency domain
     aberrant_img = ifft2(fft2(img_noise) * Po)
+
+    # apply wavefront conjugation to the aberration image in
+    # frequency domain
+
     conjugate_img = ifft2(fft2(aberrant_img) * Px)
 
     img_compare_list = [Po, Px, aberrant_img, conjugate_img]
@@ -203,6 +206,7 @@ if __name__ == '__main__':
     title_compare_list = ['wavefront phase',
                           'conjugate wavefront phase',
                           'aberrant image', 'conjugate image']
+
     fig, axs = plt.subplots(2, 2, figsize=(10, 10),
                             constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat,
