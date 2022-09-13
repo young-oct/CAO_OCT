@@ -62,28 +62,17 @@ def aberrate(img=None, abe_coes=None, D=None):
 
 
 def normalize_psf(psf):
-    h = ft2(psf)
+    h = fft2(psf)
     psf_norm = abs(h) ** 2
     return psf_norm / np.max(psf_norm)
-
 
 def normalize_image(image):
     return abs(image) / np.max(abs(image))
 
-
-def ft2(f):
-    g = fftshift(fft2(fftshift(f)))
-    return g
-
-
 def myconv2(img=None, psf=None):
-    C = ift2(ft2(img) * ft2(psf))
+    C = ifft2(fft2(img) * fft2(psf))
     return C
 
-
-def ift2(f=None):
-    g = ifftshift(ifft2(ifftshift(f)))
-    return g
 
 
 def zernike_index(j=None, k=None):
