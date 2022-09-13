@@ -52,10 +52,10 @@ def aberrate(img=None,abe_coes = None,D=None ):
     Po = np.exp(phi_o)
     Px = np.exp(phi_x)
 
-    zernike_plane = circ(x, D) * W
+    zernike_plane = W
     zernike_plane = zernike_plane/np.max(zernike_plane)
 
-    psf = normalize_psf(circ(x, D) * Po)
+    psf = normalize_psf(Po)
 
     return zernike_plane,normalize_image(myconv2(psf, img)), Po,Px
 
