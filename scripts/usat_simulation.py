@@ -29,9 +29,10 @@ import matplotlib
 import cv2 as cv
 import glob
 
-def aberrate(img=None,abe_coes = None,D=None ):
+
+def aberrate(img=None, abe_coes=None, D=None):
     N = 512
-    img = img/np.max(img)
+    img = img / np.max(img)
     [x, y] = np.meshgrid(np.linspace(-N / 2, N / 2, N),
                          np.linspace(-N / 2, N / 2, N))
 
@@ -53,19 +54,22 @@ def aberrate(img=None,abe_coes = None,D=None ):
     Px = np.exp(phi_x)
 
     zernike_plane = W
-    zernike_plane = zernike_plane/np.max(zernike_plane)
+    zernike_plane = zernike_plane / np.max(zernike_plane)
 
     psf = normalize_psf(Po)
 
-    return zernike_plane,normalize_image(myconv2(psf, img)), Po,Px
+    return zernike_plane, normalize_image(myconv2(psf, img)), Po, Px
+
 
 def normalize_psf(psf):
     h = ft2(psf)
     psf_norm = abs(h) ** 2
-    return psf_norm/np.max(psf_norm)
+    return psf_norm / np.max(psf_norm)
+
 
 def normalize_image(image):
     return abs(image) / np.max(abs(image))
+
 
 def ft2(f):
     g = fftshift(fft2(fftshift(f)))
@@ -73,7 +77,7 @@ def ft2(f):
 
 
 def myconv2(img=None, psf=None):
-    C = ift2(ft2(img)* ft2(psf))
+    C = ift2(ft2(img) * ft2(psf))
     return C
 
 
@@ -109,7 +113,6 @@ def zernike(i: object = None, r: object = None, theta: object = None) -> object:
 
 
 def circ(x=None, pupil=None):
-
     pupil_plane = np.zeros(x.shape)
     x_cent, y_cent = x.shape[0] // 2, x.shape[1] // 2
     for i in range(pupil_plane.shape[0]):
@@ -133,6 +136,7 @@ def zernike_radial(n=None, m=None, r=None):
         R = R + num / denom * r ** (n - 2 * s)
 
     return R
+
 
 if __name__ == '__main__':
     matplotlib.rcParams.update(
@@ -173,8 +177,8 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, aberrated_img, Po, Px\
-        = aberrate(img_gray,abe_coes, D=512)
+    zernike_plane, aberrated_img, Po, Px \
+        = aberrate(img_gray, abe_coes, D=512)
     img_list.append(aberrated_img)
     title_list.append('aberrant image')
 
@@ -193,37 +197,34 @@ if __name__ == '__main__':
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
         if n == 3:
-            heatmap(image,ax)
+            heatmap(image, ax)
             ax.set_title(title)
 
         else:
-            ax.imshow(image,'gray')
+            ax.imshow(image, 'gray')
             ax.set_title(title)
             ax.set_axis_off()
     plt.show()
 
-    img_compare_list = [Po, Px]
+    aberrant_img = ifft2(fft2(img_noise) * Po)
+    conjugate_img = ifft2(fft2(aberrant_img) * Px)
+
+    img_compare_list = [Po, Px, aberrant_img, conjugate_img]
+
     title_compare_list = ['wavefront phase',
-                          'conjugate wavefront phase']
-    fig, axs = plt.subplots(1, 2, figsize=(16, 9),
+                          'conjugate wavefront phase',
+                          'aberrant image', 'conjugate image']
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10),
                             constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat,
                                                img_compare_list,
                                                title_compare_list)):
+        if n <= 1:
+            ax.imshow(np.imag(image))
+        else:
+            ax.imshow(abs(image), 'gray')
 
-        ax.imshow(np.imag(image))
         ax.set_title(title)
         ax.set_axis_off()
 
     plt.show()
-
-
-
-
-    ### TBD steps
-
-
-    # ab_fft = fftshift(fft2(fftshift(aberrated_img))) * Px
-    # abr_img = fftshift(ifft2(fftshift(ab_fft)))
-    # plt.imshow(abs(abr_img), 'gray')
-    # plt.show()
