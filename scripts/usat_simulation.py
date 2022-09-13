@@ -16,10 +16,7 @@ optical coherence tomography based
 on a stochastic parallel gradient descent algorithm,"
 Opt. Express 28, 23306-23319 (2020)
 """
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator
-import numpy as np
+
 from scipy.special import gamma, factorial
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
@@ -49,18 +46,18 @@ def aberrate(img=None,abe_coes = None,D=None ):
                                            2 * r / D, theta)
     W = np.sum(W_values, axis=-1)
 
+    phi_o = complex(0, 1) * 2 * np.pi * W
+    phi_x = np.conjugate(phi_o)
+
+    Po = np.exp(phi_o)
+    Px = np.exp(phi_x)
+
     zernike_plane = circ(x, D) * W
     zernike_plane = zernike_plane/np.max(zernike_plane)
 
-    P = circ(x, D) * np.exp(complex(0, 1) * 2 * np.pi * W)
-    Px = np.exp(complex(0, -1) * 2 * np.pi * W)
+    psf = normalize_psf(circ(x, D) * Po)
 
-    psf = normalize_psf(P)
-
-    # zernike_plane = circ(x, D) * W
-    # z_plane = zernike_plane/np.max(zernike_plane)
-
-    return zernike_plane,normalize_image(myconv2(psf, img)), Px
+    return zernike_plane,normalize_image(myconv2(psf, img)), Po,Px
 
 def normalize_psf(psf):
     h = ft2(psf)
@@ -157,8 +154,8 @@ if __name__ == '__main__':
     abe_coes[5] = 0  # y primary coma
     abe_coes[7] = 0  # x primary coma
     abe_coes[8] = 0  # y trefoil
-    abe_coes[9] = 0  # x trefoil
-    abe_coes[10] = 0  # primary spherical
+    abe_coes[9] = 0.2  # x trefoil
+    abe_coes[10] = 0.2  # primary spherical
 
     img_list = []
     title_list = []
@@ -176,8 +173,8 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, aberrated_img, Px\
-        = aberrate(img_gray,abe_coes, D=102)
+    zernike_plane, aberrated_img, Po, Px\
+        = aberrate(img_gray,abe_coes, D=512)
     img_list.append(aberrated_img)
     title_list.append('aberrant image')
 
@@ -191,7 +188,8 @@ if __name__ == '__main__':
     title_list.append('Zernike plane')
 
     fig, axs = plt.subplots(2, 2,
-                            figsize=(10, 10), constrained_layout=True)
+                            figsize=(10, 10),
+                            constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
         if n == 3:
@@ -204,7 +202,26 @@ if __name__ == '__main__':
             ax.set_axis_off()
     plt.show()
 
+    img_compare_list = [Po, Px]
+    title_compare_list = ['wavefront phase',
+                          'conjugate wavefront phase']
+    fig, axs = plt.subplots(1, 2, figsize=(16, 9),
+                            constrained_layout=True)
+    for n, (ax, image, title) in enumerate(zip(axs.flat,
+                                               img_compare_list,
+                                               title_compare_list)):
+
+        ax.imshow(np.imag(image))
+        ax.set_title(title)
+        ax.set_axis_off()
+
+    plt.show()
+
+
+
+
     ### TBD steps
+
 
     # ab_fft = fftshift(fft2(fftshift(aberrated_img))) * Px
     # abr_img = fftshift(ifft2(fftshift(ab_fft)))
