@@ -45,8 +45,7 @@ def aberrate(img=None, abe_coes=None):
 
     W_values = np.zeros((r.shape[0], r.shape[-1], z.shape[-1]))
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = z[i] * zernike(int(i + 1),
-                                            r, theta)
+        W_values[:, :, i] = z[i] * zernike(int(i + 1), r, theta)
     W = np.sum(W_values, axis=-1)
 
     phi_o = complex(0, 1) * 2 * np.pi * W
