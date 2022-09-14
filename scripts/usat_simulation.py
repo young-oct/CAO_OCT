@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import cv2 as cv
 import glob
+# from random import seed, random
 
 
 def aberrate(img=None, abe_coes=None, D=None):
@@ -158,18 +159,20 @@ if __name__ == '__main__':
         }
     )
 
-    abe_coes = np.zeros(11)
-    abe_coes[0] = 1  # piston
-    abe_coes[1] = 0  # x tilt
-    abe_coes[2] = 0  # y tilt
-    abe_coes[3] = 0  # defocus
-    abe_coes[4] = 0  # y primary astigmatism
-    abe_coes[5] = 0  # x primary astigmatism
-    abe_coes[5] = 0  # y primary coma
-    abe_coes[7] = 0  # x primary coma
-    abe_coes[8] = 0  # y trefoil
-    abe_coes[9] = 0.2  # x trefoil
-    abe_coes[10] = 0.2  # primary spherical
+    # abe_coes = np.zeros(11)
+    np.random.seed(14)
+    abe_coes = np.random.rand(11)
+    # abe_coes[0] = 1  # piston
+    # abe_coes[1] = 0  # x tilt
+    # abe_coes[2] = 0  # y tilt
+    # abe_coes[3] = 0  # defocus
+    # abe_coes[4] = 0  # y primary astigmatism
+    # abe_coes[5] = 0  # x primary astigmatism
+    # abe_coes[5] = 0  # y primary coma
+    # abe_coes[7] = 0  # x primary coma
+    # abe_coes[8] = 0  # y trefoil
+    # abe_coes[9] = 0.2  # x trefoil
+    # abe_coes[10] = 0.2  # primary spherical
 
     img_list = []
     title_list = []
