@@ -30,16 +30,15 @@ import matplotlib.pyplot as plt
 import matplotlib
 import cv2 as cv
 import glob
-# from random import seed, random
 
+def aberrate(img=None, abe_coes=None):
 
-def aberrate(img=None, abe_coes=None, D=None):
-    N = 512
+    N = img.shape[0]
     img = img / np.max(img)
     [x, y] = np.meshgrid(np.linspace(-N / 2, N / 2, N),
                          np.linspace(-N / 2, N / 2, N))
 
-    r = np.sqrt(x ** 2 + y ** 2)
+    r = np.sqrt(x ** 2 + y ** 2) / N
     theta = np.arctan2(y, x)
 
     z = np.copy(abe_coes)
@@ -47,7 +46,7 @@ def aberrate(img=None, abe_coes=None, D=None):
     W_values = np.zeros((r.shape[0], r.shape[-1], z.shape[-1]))
     for i in range(z.shape[-1]):
         W_values[:, :, i] = z[i] * zernike(int(i + 1),
-                                           2 * r / D, theta)
+                                            r, theta)
     W = np.sum(W_values, axis=-1)
 
     phi_o = complex(0, 1) * 2 * np.pi * W
@@ -191,7 +190,7 @@ if __name__ == '__main__':
     title_list.append('noisy image')
 
     zernike_plane, aberrated_img, Po, Px \
-        = aberrate(img_gray, abe_coes, D=512)
+        = aberrate(img_gray, abe_coes)
     img_list.append(aberrated_img)
     title_list.append('aberrant image')
 
