@@ -56,10 +56,12 @@ def aberrate(img=None, abe_coes=None):
 
     zernike_plane = W
     zernike_plane = zernike_plane / np.max(zernike_plane)
+    zernike_plane = circ(img, pupil=int(N/2)) * zernike_plane
 
-    psf = normalize_psf(Po)
+    ab_img = apply_wavefront(img, Po)
+    cj_img = remove_wavefront(ab_img, Px)
 
-    return zernike_plane, normalize_image(myconv2(psf, img)), Po, Px
+    return zernike_plane, Po, Px, normalize_image(ab_img),normalize_image(cj_img)
 
 def normalize_psf(psf):
     h = fft2(psf)
@@ -69,9 +71,22 @@ def normalize_psf(psf):
 def normalize_image(image):
     return abs(image) / np.max(abs(image))
 
-def myconv2(img=None, psf=None):
-    C = ifft2(fft2(img) * fft2(psf))
-    return C
+def apply_wavefront(img=None, Po=None):
+
+    # aberrant_img = ifft2(fft2(img) * fft2(psf))
+    # shift zero frequency to align with wavefront
+    aberrant_img = ifft2(fftshift(fft2(img)) * Po)
+
+    return aberrant_img
+
+def remove_wavefront(aberrant_img=None, Px=None):
+
+    # apply wavefront conjugation to the aberration image in
+    # frequency domain
+
+    conjugate_img = ifft2(fft2(aberrant_img) * Px)
+
+    return conjugate_img
 
 def zernike_index(j=None, k=None):
     j = j - 1
@@ -157,20 +172,20 @@ if __name__ == '__main__':
         }
     )
 
-    # abe_coes = np.zeros(11)
-    np.random.seed(14)
-    abe_coes = np.random.rand(11)
-    # abe_coes[0] = 1  # piston
-    # abe_coes[1] = 0  # x tilt
-    # abe_coes[2] = 0  # y tilt
-    # abe_coes[3] = 0  # defocus
-    # abe_coes[4] = 0  # y primary astigmatism
-    # abe_coes[5] = 0  # x primary astigmatism
-    # abe_coes[5] = 0  # y primary coma
-    # abe_coes[7] = 0  # x primary coma
-    # abe_coes[8] = 0  # y trefoil
-    # abe_coes[9] = 0.2  # x trefoil
-    # abe_coes[10] = 0.2  # primary spherical
+    abe_coes = np.zeros(11)
+    # np.random.seed(14)
+    # abe_coes = np.random.rand(11)
+    abe_coes[0] = 1  # piston
+    abe_coes[1] = 0  # x tilt
+    abe_coes[2] = 0  # y tilt
+    abe_coes[3] = 40  # defocus
+    abe_coes[4] = 20  # y primary astigmatism
+    abe_coes[5] = 0.5  # x primary astigmatism
+    abe_coes[5] = 0  # y primary coma
+    abe_coes[7] = 0  # x primary coma
+    abe_coes[8] = 0  # y trefoil
+    abe_coes[9] = 0.2  # x trefoil
+    abe_coes[10] = 0.5  # primary spherical
 
     img_list = []
     title_list = []
@@ -188,10 +203,14 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, aberrated_img, Po, Px \
+    zernike_plane, Po, Px, aberrated_img,conjugate_img \
         = aberrate(img_gray, abe_coes)
     img_list.append(aberrated_img)
     title_list.append('aberrant image')
+
+
+    img_list.append(conjugate_img)
+    title_list.append('recovered image')
 
     img_fft = np.fft.fftshift(np.fft.fft2(img_noise))
     img_fft_log = 20 * np.log10(abs(img_fft))
@@ -202,49 +221,58 @@ if __name__ == '__main__':
     img_list.append(zernike_plane)
     title_list.append('Zernike plane')
 
-    fig, axs = plt.subplots(2, 2,
+    # gray_entropy = image_entropy(img_gray)
+    # noise_entropy = image_entropy(img_noise)
+    # aberrated_entropy = image_entropy(aberrated_img)
+
+    fig, axs = plt.subplots(2, 3,
                             figsize=(10, 10),
                             constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
-        if n == 3:
-            heatmap(image, ax)
+        if n == 4:
+            ax.imshow(image)
             ax.set_title(title)
+            ax.set_axis_off()
 
         else:
             ax.imshow(image, 'gray')
             ax.set_title(title)
             ax.set_axis_off()
+
+
+
     plt.show()
 
     # apply wavefront to the image in frequency domain
-    aberrant_img = ifft2(fft2(img_noise) * Po)
 
-    # apply wavefront conjugation to the aberration image in
-    # frequency domain
-
-    conjugate_img = ifft2(fft2(aberrant_img) * Px)
-
-    img_compare_list = [Po, Px, aberrant_img, conjugate_img]
-
-    title_compare_list = ['wavefront phase',
-                          'conjugate wavefront phase',
-                          'aberrant image', 'conjugate image']
-
-    fig, axs = plt.subplots(2, 2, figsize=(10, 10),
-                            constrained_layout=True)
-    for n, (ax, image, title) in enumerate(zip(axs.flat,
-                                               img_compare_list,
-                                               title_compare_list)):
-        if n <= 1:
-            ax.imshow(np.imag(image))
-        else:
-            ax.imshow(abs(image), 'gray')
-
-        ax.set_title(title)
-        ax.set_axis_off()
-
-    plt.show()
+    # aberrant_img = ifft2(fftshift(fft2(img_noise)) * Po)
+    #
+    # # apply wavefront conjugation to the aberration image in
+    # # frequency domain
+    #
+    # conjugate_img = ifft2(fft2(aberrant_img) * Px)
+    #
+    # img_compare_list = [Po, Px, aberrant_img, conjugate_img]
+    #
+    # title_compare_list = ['wavefront phase',
+    #                       'conjugate wavefront phase',
+    #                       'aberrant image', 'conjugate image']
+    #
+    # fig, axs = plt.subplots(2, 2, figsize=(10, 10),
+    #                         constrained_layout=True)
+    # for n, (ax, image, title) in enumerate(zip(axs.flat,
+    #                                            img_compare_list,
+    #                                            title_compare_list)):
+    #     if n <= 1:
+    #         ax.imshow(np.imag(image))
+    #     else:
+    #         ax.imshow(abs(image), 'gray')
+    #
+    #     ax.set_title(title)
+    #     ax.set_axis_off()
+    #
+    # plt.show()
 
     gray_entropy = image_entropy(img_gray)
     noise_entropy = image_entropy(img_noise)
