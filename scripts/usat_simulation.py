@@ -6,9 +6,10 @@
 
 """
 Simulated aberrated USAF resolution target image
-with 3rd-order Zernike polynomials baesd on
+with 3rd-order Zernike polynomials based on the following
+references
 
-Dan Zhu, Ruoyan Wang, Mantas Žurauskas,
+1. Dan Zhu, Ruoyan Wang, Mantas Žurauskas,
 Paritosh Pande, Jinci Bi, Qun Yuan, Lingjie Wang,
 Zhishan Gao, and Stephen A. Boppart,
 "Automated fast computational adaptive optics for
@@ -22,6 +23,7 @@ from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
 from scripts.tools.plot import heatmap
 import numpy as np
+from sklearn import preprocessing
 from skimage.util import random_noise
 from skimage.color import rgb2gray
 import matplotlib.pyplot as plt
@@ -59,7 +61,6 @@ def aberrate(img=None, abe_coes=None, D=None):
     psf = normalize_psf(Po)
 
     return zernike_plane, normalize_image(myconv2(psf, img)), Po, Px
-
 
 def normalize_psf(psf):
     h = fft2(psf)
@@ -123,6 +124,28 @@ def zernike_radial(n=None, m=None, r=None):
         R = R + num / denom * r ** (n - 2 * s)
 
     return R
+
+def image_entropy(image = None):
+    """
+    implementation of image entropy using Eq(10)
+    from the reference[1]
+    :param image: 2D array
+    :return: entropy of the image
+    """
+
+    # normalize image with l2
+    img_mag = preprocessing.normalize(abs(image), norm= 'l2')
+
+    entropy = 0
+    for i in range(img_mag.shape[0]):
+        for j in range(img_mag.shape[1]):
+            intensity_value = img_mag[i,j]
+            if intensity_value != 0: # avoid log(0) error/warning
+                entropy = entropy - (intensity_value * np.log(intensity_value))
+            else:
+                pass
+
+    return entropy
 
 
 if __name__ == '__main__':
@@ -220,4 +243,17 @@ if __name__ == '__main__':
         ax.set_title(title)
         ax.set_axis_off()
 
+    plt.show()
+
+    gray_entropy = image_entropy(img_gray)
+    noise_entropy = image_entropy(img_noise)
+    aberrated_entropy = image_entropy(aberrated_img)
+
+    x = ['original\nimage', 'noisy\nimage', 'aberrant\nimage']
+    y = [gray_entropy, noise_entropy,aberrated_entropy]
+    fig, ax = plt.subplots(1, 1, figsize=(16, 9))
+    ax.bar(x, y,width = 0.5)
+    ax.set_ylabel('entropy [a.u]')
+    plt.title('image entropy')
+    plt.tight_layout()
     plt.show()
