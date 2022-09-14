@@ -18,7 +18,7 @@ on a stochastic parallel gradient descent algorithm,"
 Opt. Express 28, 23306-23319 (2020)
 """
 
-from scipy.special import gamma, factorial
+from scipy.special import gamma
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
 from scripts.tools.plot import heatmap
@@ -171,20 +171,22 @@ if __name__ == '__main__':
         }
     )
 
-    abe_coes = np.zeros(11)
-    # np.random.seed(14)
-    # abe_coes = np.random.rand(11)
-    abe_coes[0] = 1  # piston
-    abe_coes[1] = 0  # x tilt
-    abe_coes[2] = 0  # y tilt
-    abe_coes[3] = 40  # defocus
-    abe_coes[4] = 20  # y primary astigmatism
-    abe_coes[5] = 0.5  # x primary astigmatism
-    abe_coes[5] = 0  # y primary coma
-    abe_coes[7] = 0  # x primary coma
-    abe_coes[8] = 0  # y trefoil
-    abe_coes[9] = 0.2  # x trefoil
-    abe_coes[10] = 0.5  # primary spherical
+    # abe_coes = np.zeros(11)
+    np.random.seed(2022)
+    sigma, mu = np.random.randint(20,size = 2)
+    abe_coes = mu + sigma * np.random.randn(20)
+
+    # abe_coes[0] = 1  # piston
+    # abe_coes[1] = 0  # x tilt
+    # abe_coes[2] = 10  # y tilt
+    # abe_coes[3] = 40  # defocus
+    # abe_coes[4] = 100  # y primary astigmatism
+    # abe_coes[5] = 0.5  # x primary astigmatism
+    # abe_coes[5] = 0  # y primary coma
+    # abe_coes[7] = 0  # x primary coma
+    # abe_coes[8] = 0  # y trefoil
+    # abe_coes[9] = 0.2  # x trefoil
+    # abe_coes[10] = 0.5  # primary spherical
 
     img_list = []
     title_list = []
@@ -193,8 +195,11 @@ if __name__ == '__main__':
     img = cv.imread(image_plist[-1])
     img_gray = rgb2gray(img)
 
-    # img_list.append(img_gray)
-    # title_list.append('original image')
+    img_list.append(img_gray)
+    title_list.append('original image')
+
+    ori_img_fft = np.fft.fftshift(np.fft.fft2(img_gray))
+    ori_img_fft_log = 20 * np.log10(abs(ori_img_fft))
 
     img_noise = random_noise(img_gray, mode='gaussian', var=0.005)
     img_noise = random_noise(img_noise, mode='speckle', var=0.1)
@@ -213,30 +218,33 @@ if __name__ == '__main__':
     img_fft = np.fft.fftshift(np.fft.fft2(img_noise))
     img_fft_log = 20 * np.log10(abs(img_fft))
 
+    img_list.append(ori_img_fft_log)
+    title_list.append('fft image: original')
+
     img_list.append(img_fft_log)
-    title_list.append('fft image')
+    title_list.append('fft image: noisy')
 
     ab_img_fft = np.fft.fftshift(np.fft.fft2(aberrant_img))
     ab_img_fft_log = 20 * np.log10(abs(ab_img_fft))
 
     img_list.append(ab_img_fft_log)
-    title_list.append('fft image(aberrant image)')
+    title_list.append('fft image: aberrant)')
 
     img_list.append(zernike_plane)
     title_list.append('Zernike plane')
 
-    fig, axs = plt.subplots(2, 3,
+    fig, axs = plt.subplots(2, 4,
                             figsize=(16, 9),
                             constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
-        if n == 5:
-            ax.imshow(image)
+        if n == 7:
+            heatmap(image,ax)
             ax.set_title(title)
             ax.set_axis_off()
 
         else:
-            ax.imshow(image, 'gray')
+            ax.imshow(image, 'gray', vmin = np.mean(image), vmax= np.max(image))
             ax.set_title(title)
             ax.set_axis_off()
 
