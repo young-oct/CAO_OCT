@@ -54,14 +54,13 @@ def aberrate(img=None, abe_coes=None):
     Po = np.exp(phi_o)
     Px = np.exp(phi_x)
 
-    zernike_plane = W
-    zernike_plane = zernike_plane / np.max(zernike_plane)
-    zernike_plane = circ(img, pupil=int(N/2)) * zernike_plane
+    zernike_plane = W / np.max(W)
+    zernike_plane = zernike_plane * circ(W, pupil=int(N/2))
 
     ab_img = apply_wavefront(img, Po)
     cj_img = remove_wavefront(ab_img, Px)
 
-    return zernike_plane, Po, Px, normalize_image(ab_img),normalize_image(cj_img)
+    return zernike_plane, Po, Px, normalize_image(ab_img), normalize_image(cj_img)
 
 def normalize_psf(psf):
     h = fft2(psf)
@@ -203,11 +202,10 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, Po, Px, aberrated_img,conjugate_img \
+    zernike_plane, Po, Px, aberrant_img,conjugate_img \
         = aberrate(img_gray, abe_coes)
-    img_list.append(aberrated_img)
+    img_list.append(aberrant_img)
     title_list.append('aberrant image')
-
 
     img_list.append(conjugate_img)
     title_list.append('recovered image')
@@ -218,19 +216,21 @@ if __name__ == '__main__':
     img_list.append(img_fft_log)
     title_list.append('fft image')
 
+    ab_img_fft = np.fft.fftshift(np.fft.fft2(aberrant_img))
+    ab_img_fft_log = 20 * np.log10(abs(ab_img_fft))
+
+    img_list.append(ab_img_fft_log)
+    title_list.append('fft image(aberrant image)')
+
     img_list.append(zernike_plane)
     title_list.append('Zernike plane')
 
-    # gray_entropy = image_entropy(img_gray)
-    # noise_entropy = image_entropy(img_noise)
-    # aberrated_entropy = image_entropy(aberrated_img)
-
     fig, axs = plt.subplots(2, 3,
-                            figsize=(10, 10),
+                            figsize=(16, 9),
                             constrained_layout=True)
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
-        if n == 4:
+        if n == 5:
             ax.imshow(image)
             ax.set_title(title)
             ax.set_axis_off()
@@ -240,46 +240,19 @@ if __name__ == '__main__':
             ax.set_title(title)
             ax.set_axis_off()
 
-
-
     plt.show()
-
-    # apply wavefront to the image in frequency domain
-
-    # aberrant_img = ifft2(fftshift(fft2(img_noise)) * Po)
-    #
-    # # apply wavefront conjugation to the aberration image in
-    # # frequency domain
-    #
-    # conjugate_img = ifft2(fft2(aberrant_img) * Px)
-    #
-    # img_compare_list = [Po, Px, aberrant_img, conjugate_img]
-    #
-    # title_compare_list = ['wavefront phase',
-    #                       'conjugate wavefront phase',
-    #                       'aberrant image', 'conjugate image']
-    #
-    # fig, axs = plt.subplots(2, 2, figsize=(10, 10),
-    #                         constrained_layout=True)
-    # for n, (ax, image, title) in enumerate(zip(axs.flat,
-    #                                            img_compare_list,
-    #                                            title_compare_list)):
-    #     if n <= 1:
-    #         ax.imshow(np.imag(image))
-    #     else:
-    #         ax.imshow(abs(image), 'gray')
-    #
-    #     ax.set_title(title)
-    #     ax.set_axis_off()
-    #
-    # plt.show()
 
     gray_entropy = image_entropy(img_gray)
     noise_entropy = image_entropy(img_noise)
-    aberrated_entropy = image_entropy(aberrated_img)
+    aberrant_entropy = image_entropy(aberrant_img)
+    recovered_entropy = image_entropy(conjugate_img)
 
-    x = ['original\nimage', 'noisy\nimage', 'aberrant\nimage']
-    y = [gray_entropy, noise_entropy,aberrated_entropy]
+    x = ['original\nimage', 'noisy\nimage',
+         'aberrant\nimage', 'recovered\nimage']
+
+    y = [gray_entropy, noise_entropy,
+         aberrant_entropy,recovered_entropy]
+
     fig, ax = plt.subplots(1, 1, figsize=(16, 9))
     ax.bar(x, y,width = 0.5)
     ax.set_ylabel('entropy [a.u]')
