@@ -159,7 +159,7 @@ def image_entropy(image=None):
     return entropy
 
 
-def load_zernike_coefficients(order = 20, radmon_sel=True):
+def load_zernike_coefficients(order=20, radmon_sel=True):
     if radmon_sel:
         np.random.seed(2022)
         sigma, mu = np.random.randint(order, size=2)
@@ -168,15 +168,15 @@ def load_zernike_coefficients(order = 20, radmon_sel=True):
         z_cos = np.zeros(11)
         z_cos[0] = 1  # piston
         z_cos[1] = 0  # x tilt
-        z_cos[2] = 0  # y tilt
-        z_cos[3] = 0.1  # defocus
-        z_cos[4] = 0.5  # y primary astigmatism
-        z_cos[5] = 0.5  # x primary astigmatism
+        z_cos[2] = 1000  # y tilt
+        z_cos[3] = 10  # defocus
+        z_cos[4] = 1e4  # y primary astigmatism
+        z_cos[5] = 0  # x primary astigmatism
         z_cos[5] = 0  # y primary coma
         z_cos[7] = 0  # x primary coma
         z_cos[8] = 0  # y trefoil
         z_cos[9] = 0.2  # x trefoil
-        z_cos[10] = 0.5  # primary spherical
+        z_cos[10] = 1e5  # primary spherical
 
     return z_cos
 
@@ -191,13 +191,22 @@ if __name__ == '__main__':
         }
     )
 
-    abe_coes = load_zernike_coefficients(order=5, radmon_sel = True)
-
     img_list = []
     title_list = []
 
-    image_plist = glob.glob('../test_image/*.png')
-    img = cv.imread(image_plist[0])
+    image_plist = glob.glob('../test images/*.png')
+
+    # test image selector: -1: USA target; 0: dot target
+    img_no = -1
+
+    if img_no == -1:
+        # simulate a low order, high value aberration for the USA target
+        abe_coes = load_zernike_coefficients(order=5, radmon_sel=True)
+    else:
+        # simulate a high order, high value aberration for the dot target
+        abe_coes = load_zernike_coefficients(order=10, radmon_sel=False)
+
+    img = cv.imread(image_plist[int(img_no)])
     img_gray = rgb2gray(img)
 
     img_list.append(img_gray)
@@ -242,12 +251,12 @@ if __name__ == '__main__':
                             figsize=(16, 9))
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
-        if n == len(title_list)-1:
-            heatmap(title,image, ax)
+        if n == len(title_list) - 1:
+            heatmap(title, image, ax)
             ax.set_axis_off()
 
         else:
-            ax.imshow(image, 'gray',aspect=image.shape[1]/image.shape[0],
+            ax.imshow(image, 'gray', aspect=image.shape[1] / image.shape[0],
                       vmin=np.mean(image), vmax=np.max(image))
             ax.set_title(title)
 
