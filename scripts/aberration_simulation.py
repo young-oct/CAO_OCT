@@ -197,14 +197,16 @@ if __name__ == '__main__':
     image_plist = glob.glob('../test images/*.png')
 
     # test image selector: -1: USA target; 0: dot target
-    img_no = -1
+    img_no = 2
 
-    if img_no == -1:
+    if img_no == -1 or img_no == 1:
         # simulate a low order, high value aberration for the USA target
         abe_coes = load_zernike_coefficients(order=5, radmon_sel=True)
-    else:
+    elif img_no == 0:
         # simulate a high order, high value aberration for the dot target
         abe_coes = load_zernike_coefficients(order=10, radmon_sel=False)
+    else:
+        raise ValueError('please input either 0 or -1 or 1')
 
     img = cv.imread(image_plist[int(img_no)])
     img_gray = rgb2gray(img)
