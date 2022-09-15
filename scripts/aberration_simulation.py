@@ -172,7 +172,7 @@ def load_zernike_coefficients(order=20, radmon_sel=True):
         z_cos[3] = 10  # defocus
         z_cos[4] = 1e4  # y primary astigmatism
         z_cos[5] = 0  # x primary astigmatism
-        z_cos[5] = 0  # y primary coma
+        z_cos[6] = 0  # y primary coma
         z_cos[7] = 0  # x primary coma
         z_cos[8] = 0  # y trefoil
         z_cos[9] = 0.2  # x trefoil
