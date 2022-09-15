@@ -48,7 +48,3 @@ class OssiviewDataHeader:
         return yaml.load(self.header,Loader=yaml.SafeLoader)
                    
 
-if __name__ == "__main__":
-    file = radius'Data\testOutput.bin'
-    Header = OssiviewDataHeader(file)
-           

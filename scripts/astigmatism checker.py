@@ -10,8 +10,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from tools.pre_proc import load_from_oct_file
-import matplotlib
 from natsort import natsorted
+from tools import plot
 import discorpy.prep.preprocessing as prep
 
 """
@@ -23,15 +23,6 @@ AIP Advances, 8(1), 015124. https://doi.org/10.1063/1.5009683
 """
 
 if __name__ == '__main__':
-
-    matplotlib.rcParams.update(
-        {
-            'font.size': 20,
-            'text.usetex': False,
-            'font.family': 'sans-serif',
-            'mathtext.fontset': 'stix',
-        }
-    )
 
     data_path = '../data/*.oct'
     data_sets = natsorted(glob.glob(data_path))

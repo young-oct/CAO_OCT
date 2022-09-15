@@ -21,7 +21,7 @@ Opt. Express 28, 23306-23319 (2020)
 from scipy.special import gamma
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
-from scripts.tools.plot import heatmap
+from scripts.tools.plot import *
 import numpy as np
 from sklearn import preprocessing
 from skimage.util import random_noise
@@ -182,14 +182,6 @@ def load_zernike_coefficients(order=20, radmon_sel=True):
 
 
 if __name__ == '__main__':
-    matplotlib.rcParams.update(
-        {
-            'font.size': 20,
-            'text.usetex': False,
-            'font.family': 'sans-serif',
-            'mathtext.fontset': 'stix',
-        }
-    )
 
     img_list = []
     title_list = []

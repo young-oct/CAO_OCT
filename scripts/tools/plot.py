@@ -8,6 +8,16 @@ import numpy as np
 import matplotlib as plt
 from .proc import index_mid
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib
+
+matplotlib.rcParams.update(
+    {
+        'font.size': 20,
+        'text.usetex': False,
+        'font.family': 'sans-serif',
+        'mathtext.fontset': 'stix',
+    }
+)
 
 def heatmap(title, data, ax=None):
     if not ax:
