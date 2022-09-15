@@ -159,10 +159,10 @@ def image_entropy(image=None):
     return entropy
 
 
-def load_zernike_coefficients(radmon_sel=True):
+def load_zernike_coefficients(order = 20, radmon_sel=True):
     if radmon_sel:
         np.random.seed(2022)
-        sigma, mu = np.random.randint(20, size=2)
+        sigma, mu = np.random.randint(order, size=2)
         z_cos = mu + sigma * np.random.randn(20)
     else:
         z_cos = np.zeros(11)
@@ -191,13 +191,13 @@ if __name__ == '__main__':
         }
     )
 
-    abe_coes = load_zernike_coefficients(radmon_sel=True)
+    abe_coes = load_zernike_coefficients(order=5, radmon_sel = True)
 
     img_list = []
     title_list = []
 
     image_plist = glob.glob('../test_image/*.png')
-    img = cv.imread(image_plist[-1])
+    img = cv.imread(image_plist[0])
     img_gray = rgb2gray(img)
 
     img_list.append(img_gray)
