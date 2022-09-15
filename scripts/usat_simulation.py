@@ -31,8 +31,8 @@ import matplotlib
 import cv2 as cv
 import glob
 
-def aberrate(img=None, abe_coes=None):
 
+def aberrate(img=None, abe_coes=None):
     N = img.shape[0]
     img = img / np.max(img)
     [x, y] = np.meshgrid(np.linspace(-N / 2, N / 2, N),
@@ -48,44 +48,41 @@ def aberrate(img=None, abe_coes=None):
         W_values[:, :, i] = z[i] * zernike(int(i + 1), r, theta)
     W = np.sum(W_values, axis=-1)
 
-    phi_o = complex(0, 1) * 2 * np.pi * W
+    # shift zero frequency to align with wavefront
+    phi_o = fftshift(complex(0, 1) * 2 * np.pi * W)
     phi_x = np.conjugate(phi_o)
 
     Po = np.exp(phi_o)
     Px = np.exp(phi_x)
 
     zernike_plane = W / np.max(W)
-    zernike_plane = zernike_plane * circ(W, pupil=int(N/2))
+    zernike_plane = zernike_plane * circ(W, pupil=int(N / 2))
 
     ab_img = apply_wavefront(img, Po)
     cj_img = remove_wavefront(ab_img, Px)
 
     return zernike_plane, Po, Px, normalize_image(ab_img), normalize_image(cj_img)
 
+
 def normalize_psf(psf):
     h = fft2(psf)
     psf_norm = abs(h) ** 2
     return psf_norm / np.max(psf_norm)
 
+
 def normalize_image(image):
     return abs(image) / np.max(abs(image))
 
+
 def apply_wavefront(img=None, Po=None):
+    return ifft2(fft2(img) * Po)
 
-    # aberrant_img = ifft2(fft2(img) * fft2(psf))
-    # shift zero frequency to align with wavefront
-    aberrant_img = ifft2(fftshift(fft2(img)) * Po)
-
-    return aberrant_img
 
 def remove_wavefront(aberrant_img=None, Px=None):
-
     # apply wavefront conjugation to the aberration image in
     # frequency domain
+    return ifft2(fft2(aberrant_img) * Px)
 
-    conjugate_img = ifft2(fft2(aberrant_img) * Px)
-
-    return conjugate_img
 
 def zernike_index(j=None, k=None):
     j = j - 1
@@ -138,7 +135,8 @@ def zernike_radial(n=None, m=None, r=None):
 
     return R
 
-def image_entropy(image = None):
+
+def image_entropy(image=None):
     """
     implementation of image entropy using Eq(10)
     from the reference[1]
@@ -147,18 +145,40 @@ def image_entropy(image = None):
     """
 
     # normalize image with l2
-    img_mag = preprocessing.normalize(abs(image), norm= 'l2')
+    img_mag = preprocessing.normalize(abs(image), norm='l2')
 
     entropy = 0
     for i in range(img_mag.shape[0]):
         for j in range(img_mag.shape[1]):
-            intensity_value = img_mag[i,j]
-            if intensity_value != 0: # avoid log(0) error/warning
+            intensity_value = img_mag[i, j]
+            if intensity_value != 0:  # avoid log(0) error/warning
                 entropy = entropy - (intensity_value * np.log(intensity_value))
             else:
                 pass
 
     return entropy
+
+
+def load_zernike_coefficients(radmon_sel=True):
+    if radmon_sel:
+        np.random.seed(2022)
+        sigma, mu = np.random.randint(20, size=2)
+        z_cos = mu + sigma * np.random.randn(20)
+    else:
+        z_cos = np.zeros(11)
+        z_cos[0] = 1  # piston
+        z_cos[1] = 0  # x tilt
+        z_cos[2] = 0  # y tilt
+        z_cos[3] = 0.1  # defocus
+        z_cos[4] = 0.5  # y primary astigmatism
+        z_cos[5] = 0.5  # x primary astigmatism
+        z_cos[5] = 0  # y primary coma
+        z_cos[7] = 0  # x primary coma
+        z_cos[8] = 0  # y trefoil
+        z_cos[9] = 0.2  # x trefoil
+        z_cos[10] = 0.5  # primary spherical
+
+    return z_cos
 
 
 if __name__ == '__main__':
@@ -171,22 +191,7 @@ if __name__ == '__main__':
         }
     )
 
-    # abe_coes = np.zeros(11)
-    np.random.seed(2022)
-    sigma, mu = np.random.randint(20,size = 2)
-    abe_coes = mu + sigma * np.random.randn(20)
-
-    # abe_coes[0] = 1  # piston
-    # abe_coes[1] = 0  # x tilt
-    # abe_coes[2] = 10  # y tilt
-    # abe_coes[3] = 40  # defocus
-    # abe_coes[4] = 100  # y primary astigmatism
-    # abe_coes[5] = 0.5  # x primary astigmatism
-    # abe_coes[5] = 0  # y primary coma
-    # abe_coes[7] = 0  # x primary coma
-    # abe_coes[8] = 0  # y trefoil
-    # abe_coes[9] = 0.2  # x trefoil
-    # abe_coes[10] = 0.5  # primary spherical
+    abe_coes = load_zernike_coefficients(radmon_sel=True)
 
     img_list = []
     title_list = []
@@ -207,7 +212,7 @@ if __name__ == '__main__':
     img_list.append(img_noise)
     title_list.append('noisy image')
 
-    zernike_plane, Po, Px, aberrant_img,conjugate_img \
+    zernike_plane, Po, Px, aberrant_img, conjugate_img \
         = aberrate(img_gray, abe_coes)
     img_list.append(aberrant_img)
     title_list.append('aberrant image')
@@ -234,20 +239,20 @@ if __name__ == '__main__':
     title_list.append('Zernike plane')
 
     fig, axs = plt.subplots(2, 4,
-                            figsize=(16, 9),
-                            constrained_layout=True)
+                            figsize=(16, 9))
     for n, (ax, image, title) in enumerate(zip(axs.flat, img_list, title_list)):
 
-        if n == 7:
-            heatmap(image,ax)
-            ax.set_title(title)
+        if n == len(title_list)-1:
+            heatmap(title,image, ax)
             ax.set_axis_off()
 
         else:
-            ax.imshow(image, 'gray', vmin = np.mean(image), vmax= np.max(image))
+            ax.imshow(image, 'gray',aspect=image.shape[1]/image.shape[0],
+                      vmin=np.mean(image), vmax=np.max(image))
             ax.set_title(title)
-            ax.set_axis_off()
 
+            ax.set_axis_off()
+    plt.tight_layout()
     plt.show()
 
     gray_entropy = image_entropy(img_gray)
@@ -259,10 +264,10 @@ if __name__ == '__main__':
          'aberrant\nimage', 'recovered\nimage']
 
     y = [gray_entropy, noise_entropy,
-         aberrant_entropy,recovered_entropy]
+         aberrant_entropy, recovered_entropy]
 
     fig, ax = plt.subplots(1, 1, figsize=(16, 9))
-    ax.bar(x, y,width = 0.5)
+    ax.bar(x, y, width=0.5)
     ax.set_ylabel('entropy [a.u]')
     plt.title('image entropy')
     plt.tight_layout()

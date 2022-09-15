@@ -7,20 +7,22 @@
 import numpy as np
 import matplotlib as plt
 from .proc import index_mid
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-def heatmap(data, ax=None,
-            cbar_kw={}, cbarlabel="", **kwargs):
+def heatmap(title, data, ax=None):
     if not ax:
         ax = plt.gca()
 
     # Plot the heatmap
-    im = ax.imshow(data, **kwargs)
+    im = ax.imshow(data)
 
-    # Create colorbar
-    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
-    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
+    divider = make_axes_locatable(ax)
+    cax = divider.new_vertical(size="-3.5%",
+                               pad=0.25,
+                               pack_start=True)
+    ax.figure.add_axes(cax)
+    cbar = ax.figure.colorbar(im, cax=cax, orientation="horizontal")
 
-    # Let the horizontal axes labeling appear on top.
     ax.tick_params(top=True, bottom=False,
                    labeltop=True, labelbottom=False)
 
@@ -30,10 +32,9 @@ def heatmap(data, ax=None,
 
     ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
     ax.tick_params(which="minor", bottom=False, left=False)
-    # ax.set_title('std: %.2f' % np.std(data), y=0, pad=-14)
+    ax.set_title(title, y=1, pad=5, fontsize = 20)
     ax.xaxis.set_label_position('top')
-    # ax.set_xlabel('std: %.2f' % np.std(data))
-    # ax.set_title('Manual y', y=1.0, pad=-14)
+
     return im, cbar
 
 def line_fit_plot(points,l_txt, ax, order = 1):
