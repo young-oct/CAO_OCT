@@ -197,7 +197,7 @@ if __name__ == '__main__':
     image_plist = glob.glob('../test images/*.png')
 
     # test image selector: -1: USA target; 0: dot target
-    img_no = 2
+    img_no = 0
 
     if img_no == -1 or img_no == 1:
         # simulate a low order, high value aberration for the USA target
