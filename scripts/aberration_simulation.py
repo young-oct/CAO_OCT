@@ -166,17 +166,17 @@ def load_zernike_coefficients(order=20, radmon_sel=True):
         z_cos = mu + sigma * np.random.randn(20)
     else:
         z_cos = np.zeros(11)
-        z_cos[0] = 1  # piston
+        z_cos[0] = 0  # piston
         z_cos[1] = 0  # x tilt
-        z_cos[2] = 1000  # y tilt
-        z_cos[3] = 10  # defocus
-        z_cos[4] = 1e4  # y primary astigmatism
-        z_cos[5] = 0  # x primary astigmatism
+        # z_cos[2] = 1000  # y tilt
+        # z_cos[3] = 50  # defocus
+        z_cos[4] = 500  # y primary astigmatism
+        z_cos[5] = 500  # x primary astigmatism
         z_cos[6] = 0  # y primary coma
         z_cos[7] = 0  # x primary coma
         z_cos[8] = 0  # y trefoil
-        z_cos[9] = 0.2  # x trefoil
-        z_cos[10] = 1e5  # primary spherical
+        z_cos[9] = 0  # x trefoil
+        # z_cos[10] = 1000  # primary spherical
 
     return z_cos
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     image_plist = glob.glob('../test images/*.png')
 
     # test image selector: -1: USA target; 0: dot target
-    img_no = 0
+    img_no = -1
 
     if img_no == -1 or img_no == 1:
         # simulate a low order, high value aberration for the USA target
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     recovered_entropy = image_entropy(conjugate_img)
 
     x = ['original\nimage', 'noisy\nimage',
-         'aberrant\nimage', 'recovered\nimage']
+         'aberrant\nimage', 'recovered\nimage(manual)']
 
     y = [gray_entropy, noise_entropy,
          aberrant_entropy, recovered_entropy]

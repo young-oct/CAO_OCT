@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-# @Time    : 2022-09-15 12:58
+# @Time    : 2022-09-20 17:36
 # @Author  : young wang
-# @FileName: gradient_descent.py
+# @FileName: test.py
 # @Software: PyCharm
+
 
 import torch
 from scipy.special import gamma
@@ -135,25 +136,10 @@ def image_entropy(image=None):
     return abs(entropy)
 
 
-def load_zernike_coefficients(order=20, radmon_sel=True):
-    if radmon_sel:
-        torch.manual_seed(0)
-        sigma, mu = torch.randint(order, size=(2,))
-        z_cos = mu + sigma * torch.distributions.Uniform(0, 0.1).sample((10,))
-    else:
-        z_cos = torch.zeros(11)
-        z_cos[0] = 1  # piston
-        z_cos[1] = 0  # x tilt
-        z_cos[2] = 1000  # y tilt
-        z_cos[3] = 10  # defocus
-        z_cos[4] = 1e4  # y primary astigmatism
-        z_cos[5] = 0  # x primary astigmatism
-        z_cos[6] = 0  # y primary coma
-        z_cos[7] = 0  # x primary coma
-        z_cos[8] = 0  # y trefoil
-        z_cos[9] = 0.2  # x trefoil
-        z_cos[10] = 1e5  # primary spherical
-
+def load_zernike_coefficients():
+    torch.manual_seed(0)
+    sigma, mu = torch.distributions.Uniform(0, 2).sample((2,))
+    z_cos = mu + sigma * torch.distributions.Uniform(0, 1).sample((10,))
     return z_cos
 
 def construct_zernike(zcof, image=None):
@@ -162,6 +148,7 @@ def construct_zernike(zcof, image=None):
     N = image.shape[0]
 
     W_values = torch.zeros((N, N, z.shape[-1]))
+
     [x, y] = torch.meshgrid(torch.linspace(-N / 2, N / 2, N),
                          torch.linspace(-N / 2, N / 2, N), indexing='ij')
 
@@ -171,105 +158,31 @@ def construct_zernike(zcof, image=None):
     for i in range(z.shape[-1]):
         W_values[:, :, i] = z[i] * zernike(int(i + 1), r, theta)
     W = torch.sum(W_values, axis=-1)
-    phi_x = (complex(0, -1) * 2 * torch.pi * fftshift(W))
-    Px = torch.exp(phi_x)
+    # phi_x = (complex(0, -1) * 2 * torch.pi * fftshift(W))
+    # Px = torch.exp(phi_x)
 
-    return ifft2(fft2(image) * Px)
-
-
-class Model(nn.Module):
-    """Custom Pytorch model for gradient optimization.
-    """
-
-    def __init__(self):
-        super().__init__()
-        # initialize weights with random numbers
-        torch.manual_seed(0)
-        weights = torch.distributions.Uniform(0, 1).sample((10,))
-        # make weights torch parameters
-        print(weights)
-        self.weights = nn.Parameter(weights)
-
-    def forward(self, image):
-
-        zcof = self.weights
-        return construct_zernike(zcof, image)
-
-
-def training_loop(model, optimizer, image, n=10):
-    "Training loop for torch model."
-    losses = []
-    for i in range(n):
-        c_image = model(image)
-        loss = image_entropy(c_image)
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-        losses.append(loss.detach().numpy())
-        print(i)
-    return losses
+    return W
 
 if __name__ == '__main__':
 
-    image_plist = glob.glob('../test images/*.png')
+    abe_coes = load_zernike_coefficients()
+    img = torch.zeros((512,512))
+    W = construct_zernike(abe_coes,img)
 
-    # test image selector: -1: USA target; 0: dot target
-    img_no = -1
+    N = 512
+    [x, y] = torch.meshgrid(torch.linspace(-N / 2, N / 2, N),
+                            torch.linspace(-N / 2, N / 2, N),indexing='ij')
 
-    if img_no == -1 or img_no == 1:
-        # simulate a low order, high value aberration for the USA target
-        abe_coes = load_zernike_coefficients(order=5, radmon_sel=True)
-    elif img_no == 0:
-        # simulate a high order, high value aberration for the dot target
-        abe_coes = load_zernike_coefficients(order=10, radmon_sel=False)
-    else:
-        raise ValueError('please input either 0 or -1 or 1')
+    r = torch.sqrt(x ** 2 + y ** 2) / N
+    theta = torch.arctan2(y, x)
 
-    img = cv.imread(image_plist[int(img_no)])
-    img_gray = rgb2gray(img)
+    W_values = torch.zeros((N, N, abe_coes.shape[-1]))
+    for i in range(abe_coes.shape[-1]):
+        W_values[:, :, i] = zernike(int(i + 1), r, theta)
 
-    img_noise = random_noise(img_gray, mode='gaussian', var=0.005)
-    img_noise = random_noise(img_noise, mode='speckle', var=0.1)
-
-    _, _, _, ab_img, _ = aberrate(img_noise, abe_coes)
-    print('applied weights:',abe_coes.detach().numpy())
-    m = Model()
-    # Instantiate optimizer
-    opt = torch.optim.Adam(m.parameters(), lr=0.05)
-    losses = training_loop(m, opt, ab_img)
-    print('done')
-    est_coe = m.weights.detach().numpy()
-    print('estimated weights:',est_coe)
-
-    fig,ax = plt.subplots(1,2, figsize = (16,9))
-    X_axis = np.arange(len(abe_coes))
-
-    ax[0].bar(X_axis , abe_coes.detach().numpy(), 0.2, label='ground truth')
-    initi_guess =[0.4963, 0.7682, 0.0885, 0.1320, 0.3074, 0.6341, 0.4901, 0.8964, 0.4556,
-        0.6323]
-    ax[0].bar(X_axis + 0.2,initi_guess, 0.2, label='initial guess')
-    ax[0].bar(X_axis + 0.4, m.weights.detach().numpy(), 0.2, label='estimation')
-
-    ax[0].legend()
-    ax[1].plot(abs(np.array(losses)))
-    ax[1].set_title('loss function')
+    plt.imshow(W)
     plt.show()
 
-    fig, ax = plt.subplots(1, 3, figsize=(16, 9),layout="constrained")
-    ax[0].imshow(abs(img_noise))
-    ax[0].set_title('original')
-    ax[0].axis('off')
-
-    ax[1].imshow(abs(ab_img))
-    ax[1].set_title('aberrant image')
-    ax[1].axis('off')
-
-    cor_img = construct_zernike(m.weights, image=ab_img)
-    ax[2].imshow(abs(cor_img.detach().numpy()))
-    ax[2].set_title('corrected image')
-    ax[2].axis('off')
-    # plt.tight_layout()
+    plt.imshow(W_values[:,:,4])
     plt.show()
-
-    # tensor([0.4963, 0.7682, 0.0885, 0.1320, 0.3074, 0.6341, 0.4901, 0.8964, 0.4556,
-    #         0.6323])
+    # b = W_values.T
