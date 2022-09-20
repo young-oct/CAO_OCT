@@ -221,7 +221,7 @@ if __name__ == '__main__':
     title_list.append('aberrant image')
 
     img_list.append(conjugate_img)
-    title_list.append('recovered image')
+    title_list.append('recovered\nimage(manual)')
 
     img_fft = np.fft.fftshift(np.fft.fft2(img_noise))
     img_fft_log = 20 * np.log10(abs(img_fft))
