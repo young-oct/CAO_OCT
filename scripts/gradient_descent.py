@@ -121,6 +121,7 @@ def image_entropy(image=None):
     # temp = image.numpy()
     # normalize image with l2
     img_mag = F.normalize(image, p=2.0, eps=1e-12)
+    img_mag = torch.abs(img_mag)
     # img_mag = preprocessing.normalize(abs(temp), norm='l2')
 
     entropy = 0
@@ -132,7 +133,7 @@ def image_entropy(image=None):
             else:
                 pass
 
-    return abs(entropy)
+    return entropy
 
 
 def load_zernike_coefficients(order=20, radmon_sel=True):
@@ -186,6 +187,7 @@ class Model(nn.Module):
         # initialize weights with random numbers
         torch.manual_seed(0)
         weights = torch.distributions.Uniform(0, 1).sample((10,))
+        weights.requires_grad=True
         # make weights torch parameters
         print(weights)
         self.weights = nn.Parameter(weights)
@@ -245,8 +247,8 @@ if __name__ == '__main__':
     X_axis = np.arange(len(abe_coes))
 
     ax[0].bar(X_axis , abe_coes.detach().numpy(), 0.2, label='ground truth')
-    initi_guess =[0.4963, 0.7682, 0.0885, 0.1320, 0.3074, 0.6341, 0.4901, 0.8964, 0.4556,
-        0.6323]
+    initi_guess =[0.4963, 0.7682, 0.0885, 0.1320, 0.3074, 0.6341,
+                  0.4901, 0.8964, 0.4556,0.6323]
     ax[0].bar(X_axis + 0.2,initi_guess, 0.2, label='initial guess')
     ax[0].bar(X_axis + 0.4, m.weights.detach().numpy(), 0.2, label='estimation')
 
