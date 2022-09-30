@@ -74,7 +74,7 @@ def remove_wavefront(aberrant_img=None, Px=None):
 
 
 def zernike_index(j=None, k=None):
-    j -= - 1
+    j -= 1
     n = int(torch.floor((- 1 + torch.sqrt(torch.tensor( 8 * j + 1))) / 2))
     i = j - n * (n + 1) / 2 + 1
     m = torch.tensor(i) - torch.remainder(torch.tensor( n + i), 2)
@@ -164,6 +164,16 @@ def construct_zernike(zcof, image=None):
     return W
 
 if __name__ == '__main__':
+
+
+    image_plist = glob.glob('../test images/*.png')
+    img_no = -1
+    img = cv.imread(image_plist[int(img_no)])
+    img_gray = rgb2gray(img)
+
+
+    img_noise = random_noise(img_gray, mode='gaussian', var=0.005)
+    img_noise = random_noise(img_noise, mode='speckle', var=0.1)
 
     abe_coes = load_zernike_coefficients()
     img = torch.zeros((512,512))
