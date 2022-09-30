@@ -114,11 +114,11 @@ def image_entropy(image=None):
     :param image: 2D array
     :return: entropy of the image
     """
-
+    temp_img = normalize_image(image)
     entropy = 0
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            intensity_value = abs(image[i, j])
+    for i in range(temp_img.shape[0]):
+        for j in range(temp_img.shape[1]):
+            intensity_value = temp_img[i, j]
             if intensity_value != 0:  # avoid log(0) error/warning
                 entropy -= intensity_value * np.log(intensity_value)
             else:
