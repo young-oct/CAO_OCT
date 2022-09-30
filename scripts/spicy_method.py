@@ -177,7 +177,6 @@ if __name__ == '__main__':
     img = cv.imread(image_plist[int(img_no)])
     img_gray = rgb2gray(img)
 
-
     img_noise = random_noise(img_gray, mode='gaussian', var=0.005)
     img_noise = random_noise(img_noise, mode='speckle', var=0.1)
 
@@ -191,20 +190,26 @@ if __name__ == '__main__':
     func = partial(f, image = ab_img)
 
     options = {
-    #             'ftol': 1e-09,
-    #             'gtol': 1e-05,
-    #             'eps': 1e-08,
                  'disp': True,
                 }
     minResults = minimize(func, initial_guess,
                           method='L-BFGS-B',options= options)
 
-    x_axis = np.linspace(0,len(minResults.x),len(minResults.x))
+    est = minResults.x
+    x_axis = np.linspace(0,len(est),len(est))
 
-    plt.bar(x_axis + 0.2, minResults.x, width=0.1,label='initial guess')
+    plt.bar(x_axis + 0.2, initial_guess, width=0.1,label='initial guess')
     plt.bar(x_axis - 0.2, abe_coes, width=0.1,label='true value')
-    plt.bar(x_axis,initial_guess, width=0.1,label='estimation')
+    plt.bar(x_axis,est, width=0.1,label='estimation')
     plt.legend()
     plt.show()
 
-    image_entropy(ab_img)
+    Wx = construct_zernike(est, ab_img)
+    phi_xx = complex(0, 1) * 2 * np.pi * fftshift(Wx)
+    Pxx = np.exp(phi_xx)
+    cor_img = remove_wavefront(ab_img,Pxx)
+
+    plt.imshow(normalize_image(cor_img))
+    plt.show()
+
+
