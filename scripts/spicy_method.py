@@ -15,7 +15,6 @@ import cv2 as cv
 import glob
 import numpy as np
 
-
 def aberrate(img=None, abe_coes=None):
     N = img.shape[0]
     img = img / np.max(img)
@@ -169,8 +168,8 @@ def f(zcof,image):
 if __name__ == '__main__':
 
     abe_coes = load_zernike_coefficients()
-    # img = np.zeros((512,512))
-    # W = construct_zernike(abe_coes,img)
+    img = np.zeros((512,512))
+    W = construct_zernike(abe_coes,img)
 
     image_plist = glob.glob('../test images/*.png')
     img_no = -1
@@ -192,7 +191,7 @@ if __name__ == '__main__':
     options = {
                  'disp': True,
                 }
-    minResults = minimize.fmin_ncg(func, initial_guess,
+    minResults = minimize(func, initial_guess,
                           method='L-BFGS-B',options= options)
 
     est = minResults.x
