@@ -94,16 +94,19 @@ if __name__ == "__main__":
 
     W_estimate, costval = optimizer.minimise(W_initial)
 
-    fig, ax = plt.subplots(1, 2, figsize=(16, 9))
-    x_axis = np.linspace(0, W_estimate.shape[-1], W_estimate.shape[-1])
-    ax[0].bar(x_axis + .25, W_estimate.squeeze(), width=0.5, label='guess value')
-    ax[0].bar(x_axis - 0.25, W_true.squeeze(), width=0.5, label='ground truth')
-    ax[0].legend()
+    if output_dim == 1:
+        fig, ax = plt.subplots(1, 2, figsize=(16, 9))
+        x_axis = np.linspace(0, W_estimate.shape[-1], W_estimate.shape[-1])
+        ax[0].bar(x_axis + .25, W_estimate.squeeze(), width=0.5, label='guess value')
+        ax[0].bar(x_axis - 0.25, W_true.squeeze(), width=0.5, label='ground truth')
+        ax[0].legend()
 
-    ax[1].plot(np.arange(len(costval)),  costval)
-    ax[1].set_xlabel('iteration')
-    ax[1].set_ylabel('cost function values')
-    fig.suptitle('benchmark performance for SPSA')
+        ax[1].plot(np.arange(len(costval)),  costval)
+        ax[1].set_xlabel('iteration')
+        ax[1].set_ylabel('cost function values')
+        fig.suptitle('benchmark performance for SPSA')
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
+    else:
+        pass
