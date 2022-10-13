@@ -58,7 +58,7 @@ class spsa:
             k += 1
 
             cost_val = self.calc_loss(current_theta)
-            cost_func_val.append(cost_val)
+            cost_func_val.append(cost_val.squeeze())
 
         return current_theta, cost_func_val
 
@@ -71,7 +71,7 @@ def calc_loss(W_estimate, *args):
     pred = np.matmul(W_estimate, x_value)
     squared_loss = np.sum((y_target - pred) ** 2, axis=1).reshape((y_target.shape[0], -1))
     average_squared_loss = squared_loss / x_value.shape[1]
-    return average_squared_loss.squeeze()
+    return average_squared_loss
 
 
 if __name__ == "__main__":
