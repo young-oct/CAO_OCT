@@ -192,7 +192,7 @@ if __name__ == '__main__':
     options = {
                  'disp': True,
                 }
-    minResults = minimize(func, initial_guess,
+    minResults = minimize.fmin_ncg(func, initial_guess,
                           method='L-BFGS-B',options= options)
 
     est = minResults.x
