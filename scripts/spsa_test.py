@@ -11,8 +11,7 @@ function as a benchmark for testing purpose
 """
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+import matplotlib
 class spsa:
     def __init__(self, loss_function, a, c, alpha, gamma, max_iter, args=()):
         # Initialize gain parameters and decay factors
@@ -75,6 +74,15 @@ def calc_loss(W_estimate, *args):
 
 
 if __name__ == "__main__":
+
+    matplotlib.rcParams.update(
+        {
+            'font.size': 18,
+            'text.usetex': False,
+            'font.family': 'sans-serif',
+            'mathtext.fontset': 'stix',
+        }
+    )
     # Generate sample points
     N = 500
     input_dim = 10

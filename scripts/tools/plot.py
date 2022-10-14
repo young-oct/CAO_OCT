@@ -12,12 +12,17 @@ import matplotlib
 
 matplotlib.rcParams.update(
     {
-        'font.size': 20,
+        'font.size': 18,
+        'axes.labelsize': 14,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
         'text.usetex': False,
         'font.family': 'sans-serif',
         'mathtext.fontset': 'stix',
     }
 )
+
 
 def heatmap(title, data, ax=None):
     if not ax:
