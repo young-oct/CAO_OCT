@@ -170,8 +170,10 @@ def image_entropy(image=None):
 
 
 def load_zernike_coefficients(no_terms):
+    np.random.seed(20)
+
     sigma, mu = np.random.random(size=2)
-    A = mu + sigma * 10 * np.random.random(size=no_terms)
+    A = mu + sigma * 20 * np.random.random(size=no_terms)
     return A
 
 
@@ -187,7 +189,7 @@ def construct_zernike(z, image=None):
     theta = np.arctan2(y, x)
 
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = zernike(int(i + 1), r, theta)
+        W_values[:, :, i] = zernike(int((i + 3) + 1), r, theta)
 
     return W_values
 
@@ -229,8 +231,9 @@ def correct_image(img=None, cor_coes=None):
 
 
 if __name__ == '__main__':
-    np.random.seed(14)
-    no_terms = 10
+
+    # np.random.seed(2022)
+    no_terms = 3
     A_true = load_zernike_coefficients(no_terms = no_terms)
 
     image_plist = glob.glob('../test images/*.png')
@@ -241,6 +244,9 @@ if __name__ == '__main__':
     img_noise = add_noise(img_gray)
 
     _, _, _, ab_img, _ = aberrate(img_noise, A_true)
+    # plt.imshow(ab_img)
+    # plt.axis('off')
+    # plt.show()
 
     Zo = construct_zernike(A_true, img)
     A_initial = np.random.random(size=no_terms)
@@ -249,7 +255,7 @@ if __name__ == '__main__':
                      a=9e-1, c=1.0,
                      alpha_val=4,
                      gamma_val=1,
-                     max_iter=2000, img=ab_img, zernike=Zo)
+                     max_iter=200, img=ab_img, zernike=Zo)
     #
     A_estimate, costval = optimizer.minimise(A_initial)
     print('done')

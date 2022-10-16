@@ -92,13 +92,14 @@ if __name__ == "__main__":
     x = np.random.rand(input_dim, N)
     W_true = np.random.rand(output_dim, input_dim)
     print("The true value of W is: \n " + str(W_true))
-    y = np.matmul(W_true, x)
+    noise = np.random.rand(N)
+    y = np.matmul(W_true, x) + noise * 2
 
     W_initial = np.random.rand(output_dim, input_dim)
 
     optimizer = spsa(loss_function=calc_loss,
                      a=9e-1, c=1.0, alpha=0.602, gamma=0.101,
-                     max_iter=5000, args=(x, y))
+                     max_iter=1000, args=(x, y))
 
     W_estimate, costval = optimizer.minimise(W_initial)
 
@@ -118,3 +119,5 @@ if __name__ == "__main__":
         plt.show()
     else:
         pass
+
+    print("The estimate value of W is: \n " + str(W_estimate))
