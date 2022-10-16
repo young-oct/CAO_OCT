@@ -42,6 +42,7 @@ class spsa:
         k = 0  # initialize count
 
         cost_func_val = []
+        Aw_values = []
         while k < self.max_iter:
             # get the current values for gain sequences
             a_k = self.a / (k + 1 + self.A) ** self.alpha_val
@@ -61,17 +62,19 @@ class spsa:
             g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
             # update the estimate of the parameter
-            current_Aw += - a_k * g_hat
+            current_Aw = current_Aw - a_k * g_hat
 
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
+            Aw_values.append(current_Aw)
 
             k += 1
 
-        return current_Aw, cost_func_val
+        return current_Aw, cost_func_val, Aw_values
 
 
 def aberrate(img=None, abe_coes=None):
+
     W_temp = construct_zernike(abe_coes, image=img)
     W = zernike_plane(abe_coes, W_temp)
     # # shift zero frequency to align with wavefront
@@ -219,23 +222,52 @@ def add_noise(img, g_var=0.005, s_var=0.1):
 
 
 def correct_image(img=None, cor_coes=None):
+
     W_temp = construct_zernike(cor_coes, image=img)
     W = zernike_plane(cor_coes, W_temp)
-    # # shift zero frequency to align with wavefront
+
+    # W = Zo.squeeze()
     phi_o = complex(0, 1) * 2 * np.pi * fftshift(W)
     phi_x = np.conj(phi_o)
-
+    #
+    # Po = np.exp(phi_o)
+    # Po = np.exp(phi_o)
     Px = np.exp(phi_x)
 
-    return normalize_image(remove_wavefront(ab_img, Px))
+    # ab1_img = apply_wavefront(img_noise, Po)
+    cj_img = remove_wavefront(img, Px)
+
+
+    # # shift zero frequency to align with wavefront
+    # phi_x = complex(0, -1) * 2 * np.pi * fftshift(W)
+    # # phi_x = np.conj(phi_o)
+    # #
+    # # Po = np.exp(phi_o)
+    # Px = np.exp(phi_x)
+    #
+    # zernike_val = W / np.max(W)
+    #
+    # ab_img = apply_wavefront(img, Po)
+    # cj_img = remove_wavefront(ab_img, Px)
+
+    # W_temp = construct_zernike(cor_coes, image=img)
+    # W = zernike_plane(cor_coes, W_temp)
+    # # # shift zero frequency to align with wavefront
+    # phi_o = complex(0, 1) * 2 * np.pi * fftshift(W)
+    # phi_x = np.conj(phi_o)
+    #
+    # Px = np.exp(phi_x)
+
+    return Px,normalize_image(cj_img)
 
 
 if __name__ == '__main__':
 
     # np.random.seed(2022)
-    no_terms = 3
-    A_true = load_zernike_coefficients(no_terms = no_terms)
+    no_terms = 1
+    # A_true = load_zernike_coefficients(no_terms = no_terms)
 
+    A_true = np.ones(1)
     image_plist = glob.glob('../test images/*.png')
     img_no = -1
     img = cv.imread(image_plist[int(img_no)])
@@ -243,50 +275,89 @@ if __name__ == '__main__':
 
     img_noise = add_noise(img_gray)
 
-    _, _, _, ab_img, _ = aberrate(img_noise, A_true)
-    # plt.imshow(ab_img)
-    # plt.axis('off')
-    # plt.show()
+    _, po, px, ab_img, cor_img = aberrate(img_noise, A_true)
 
     Zo = construct_zernike(A_true, img)
-    A_initial = np.random.random(size=no_terms)
+    # A_initial = np.random.random(size=no_terms)*2
 
-    optimizer = spsa(loss_function=cost_func,
-                     a=9e-1, c=1.0,
-                     alpha_val=4,
-                     gamma_val=1,
-                     max_iter=200, img=ab_img, zernike=Zo)
+    fig, ax = plt.subplots(1, 4, figsize=(16, 9))
+
+    ax[0].imshow(ab_img)
+    ax[0].axis('off')
+
+    ax[1].imshow(cor_img)
+    ax[1].axis('off')
+
+    ppx, correct_img = correct_image(ab_img,A_true)
+    ax[2].imshow(correct_img)
+    ax[2].axis('off')
+
+    # W = Zo.squeeze()
+    # phi_o = complex(0, 1) * 2 * np.pi * fftshift(W)
+    # phi_x = np.conj(phi_o)
+    # #
+    # Po = np.exp(phi_o)
+    # # Po = np.exp(phi_o)
+    # Px = np.exp(phi_x)
     #
-    A_estimate, costval = optimizer.minimise(A_initial)
-    print('done')
-    #
-    fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-    ax[0, 0].imshow(ab_img, vmin=0, vmax=1)
+    # ab1_img = apply_wavefront(img_noise, Po)
+    # cj_img = remove_wavefront(ab1_img, Px)
 
-    ax[0, 0].axis('off')
-    ax[0, 0].set_title('aberrant image')
-
-    cor_img = correct_image(img=ab_img, cor_coes=A_estimate)
-    ax[0, 1].imshow(cor_img, vmin=0, vmax=1)
-
-    ax[0, 1].axis('off')
-    ax[0, 1].set_title('corrected image')
-
-    x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
-
-    ax[1, 0].bar(x_axis + .25, A_estimate.squeeze(), width=0.5, label='guess value')
-    ax[1, 0].bar(x_axis - 0.25, A_true.squeeze(), width=0.5, label='ground truth')
-
-    ax[1, 0].legend()
-    ax[1, 0].set_xlabel('zernike terms')
-    ax[1, 0].set_ylabel('numerical values')
-
-    image_entropy(img_gray)
-    ax[1, 1].plot(np.arange(len(costval)), costval)
-    # ax[1,1].axhline(y= image_entropy(img_gray), xmin=0, xmax=1,color = 'red',linestyle ='--' )
-    ax[1, 1].set_xlabel('iterations')
-    ax[1, 1].set_ylabel('cost function values')
-    fig.suptitle('SPSA based computational adaptive optics(CAO)')
-
+    cj_img = normalize_image(cj_img)
+    # new = ifft2(fft2(ab_img) * px)
+    ax[3].imshow(cj_img)
+    ax[3].axis('off')
     plt.tight_layout()
     plt.show()
+
+    # new = ifft2(fft2(ab_img) * ppx)
+    # plt.axis('off')
+    # plt.show()
+    #
+    # Zo = construct_zernike(A_true, img)
+    # A_initial = np.random.random(size=no_terms)*2
+
+    # optimizer = spsa(loss_function=cost_func,
+    #                  a=9e-1, c=1.0,
+    #                  # alpha_val=0.601,
+    #                  # gamma_val=0.101,
+    #                  alpha_val=1,
+    #                  gamma_val=0.1,
+    #                  max_iter=400, img=ab_img, zernike=Zo)
+    #
+    # A_estimate, costval, A_values = optimizer.minimise(A_initial)
+    # print('done')
+    # #
+    # fig, ax = plt.subplots(2, 2, figsize=(16, 9))
+    # ax[0, 0].imshow(ab_img, vmin=0, vmax=1)
+    #
+    # ax[0, 0].axis('off')
+    # ax[0, 0].set_title('aberrant image')
+    #
+    # cor_img = correct_image(img=ab_img, cor_coes=A_true)
+    # ax[0, 1].imshow(cor_img, vmin=0, vmax=1)
+    #
+    # ax[0, 1].axis('off')
+    # ax[0, 1].set_title('corrected image')
+    #
+    # x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
+    #
+    # ax[1, 0].bar(x_axis + .25, A_estimate.squeeze(), width=0.5, label='guess value')
+    # ax[1, 0].bar(x_axis - 0.25, A_true.squeeze(), width=0.5, label='ground truth')
+    #
+    # ax[1, 0].legend()
+    # ax[1, 0].set_xlabel('zernike terms')
+    # ax[1, 0].set_ylabel('numerical values')
+    #
+    # image_entropy(img_gray)
+    # ax[1, 1].plot(np.arange(len(costval)), costval)
+    # # ax[1,1].axhline(y= image_entropy(img_gray), xmin=0, xmax=1,color = 'red',linestyle ='--' )
+    # ax[1, 1].set_xlabel('iterations')
+    # ax[1, 1].set_ylabel('cost function values')
+    # fig.suptitle('SPSA based computational adaptive optics(CAO)')
+    #
+    # plt.tight_layout()
+    # plt.show()
+    #
+    # plt.plot(A_values)
+    # plt.show()
