@@ -52,6 +52,10 @@ class spsa:
             # compute the estimate of the gradient
             g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
+            # # gradient normalization
+            # gmax = np.abs(np.max(g_hat))
+            # g_hat = g_hat/gmax
+
             # update the estimate of the parameter
             current_theta = current_theta - a_k * g_hat
             k += 1
@@ -93,7 +97,7 @@ if __name__ == "__main__":
     W_true = np.random.rand(output_dim, input_dim)
     print("The true value of W is: \n " + str(W_true))
     noise = np.random.rand(N)
-    y = np.matmul(W_true, x) + noise * 2
+    y = np.matmul(W_true, x) + noise * 0.2
 
     W_initial = np.random.rand(output_dim, input_dim)
 

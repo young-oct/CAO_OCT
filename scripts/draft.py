@@ -110,7 +110,7 @@ class zernike:
     def __init__(self, dimension):
         self.dimension = dimension
         self.r, self = self.zernike_basis()
-        
+
 
 
     def zernike_basis(self):
