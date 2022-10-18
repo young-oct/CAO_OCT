@@ -40,7 +40,7 @@ class spsa:
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def minimise(self, current_Aw, optimizer_type='vanilla'):
+    def minimise(self, current_Aw, optimizer_type='vanilla', cal_tolerance=1e-6 ):
         k = 0  # initialize count
 
         cost_func_val = []
@@ -49,7 +49,8 @@ class spsa:
 
         previous_Aw = 0
 
-        while k < self.max_iter and np.abs(previous_Aw - current_Aw) > 1e-10:
+        while k < self.max_iter and \
+                np.abs(previous_Aw - current_Aw) > cal_tolerance:
 
             previous_Aw = current_Aw
             # get the current values for gain sequences
@@ -66,8 +67,11 @@ class spsa:
             loss_plus = self.calc_loss(Aw_plus)
             loss_minus = self.calc_loss(Aw_minus)
 
+            loss_delta = (loss_plus - loss_minus) / 2.0
+            Aw_delta = Aw_plus - Aw_minus
+
             # compute the estimate of the gradient
-            g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
+            g_hat = loss_delta / delta * c_k
 
             # update the estimate of the parameter
             if optimizer_type == 'vanilla':
@@ -77,6 +81,8 @@ class spsa:
                 vk_next = - a_k * g_hat + 0.15 * vk
                 current_Aw = current_Aw + vk_next
                 vk = vk_next
+            elif optimizer_type == 'SPGD':
+                current_Aw = current_Aw + loss_delta * Aw_delta
 
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
@@ -225,7 +231,6 @@ def cost_func(Az, image):
 
 
 if __name__ == '__main__':
-
     no_terms = 1
     A_true = load_zernike_coefficients(no_terms=no_terms,
                                        A_true_flat=True)
@@ -250,15 +255,16 @@ if __name__ == '__main__':
                      # gamma_val=0.101,
                      alpha_val=2,
                      gamma_val=1,
-                     max_iter=5,
+                     max_iter=200,
                      img_target=ab_img,
                      zernike=Zo)
     #
     # vanilla or momentum
     optimizer_type = 'vanilla'
-
+    tolerance = 1e-6
     A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_initial,
-                                                       optimizer_type=optimizer_type)
+                                                       optimizer_type=optimizer_type,
+                                                       cal_tolerance=tolerance)
     print('done')
 
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -267,7 +273,7 @@ if __name__ == '__main__':
     ax[0, 0].axis('off')
     ax[0, 0].set_title('aberrant image')
 
-    cor_img = correct_image(img_target=ab_img, cor_coes=A_true-0.2)
+    cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
     ax[0, 1].imshow(normalize_image(cor_img), vmin=0, vmax=1)
 
     ax[0, 1].axis('off')
