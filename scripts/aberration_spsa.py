@@ -40,12 +40,18 @@ class spsa:
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def minimise(self, current_Aw):
+    def minimise(self, current_Aw, optimizer_type='vanilla'):
         k = 0  # initialize count
 
         cost_func_val = []
         Aw_values = []
-        while k < self.max_iter:
+        vk = 0
+
+        previous_Aw = 0
+
+        while k < self.max_iter and np.abs(previous_Aw - current_Aw) > 1e-10:
+
+            previous_Aw = current_Aw
             # get the current values for gain sequences
             a_k = self.a / (k + 1 + self.A) ** self.alpha_val
             c_k = self.c / (k + 1) ** self.gamma_val
@@ -61,13 +67,16 @@ class spsa:
             loss_minus = self.calc_loss(Aw_minus)
 
             # compute the estimate of the gradient
-
             g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
             # update the estimate of the parameter
-            current_Aw = current_Aw - a_k * g_hat
-            # current_Aw = current_Aw + 4 * (loss_plus - loss_minus) * (Aw_plus - Aw_minus)
-            # current_Aw = current_Aw + 4 * (loss_plus - loss_minus) * g_hat
+            if optimizer_type == 'vanilla':
+                current_Aw = current_Aw + - a_k * g_hat
+            elif optimizer_type == 'momentum':
+
+                vk_next = - a_k * g_hat + 0.15 * vk
+                current_Aw = current_Aw + vk_next
+                vk = vk_next
 
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
@@ -136,37 +145,6 @@ def zernike_radial(n=None, m=None, r=None):
     return R
 
 
-def image_entropy(img_target=None):
-    """
-    implementation of image entropy using Eq(10)
-    from the reference[1]
-    :param image: 2D array
-    :return: entropy of the image
-    """
-    temp_img = normalize_image(img_target)
-    entropy = 0
-    for i in range(temp_img.shape[0]):
-        for j in range(temp_img.shape[1]):
-            intensity_value = temp_img[i, j]
-            if intensity_value != 0:  # avoid log(0) error/warning
-                entropy -= intensity_value * np.log(intensity_value)
-            else:
-                pass
-
-    return entropy
-
-
-def load_zernike_coefficients(no_terms, A_true_flat):
-    if A_true_flat:
-        np.random.seed(20)
-        sigma, mu = np.random.random(size=2)
-        A = mu + sigma * 20 * np.random.random(size=no_terms)
-    else:
-        np.random.seed(None)
-        A = np.random.random(size=no_terms)
-    return A
-
-
 def construct_zernike(z, N=512):
     W_values = np.zeros((N, N, z.shape[-1]))
 
@@ -191,18 +169,15 @@ def zernike_plane(zcof, W_values):
     return W
 
 
-def cost_func(Az, image):
-    phi_x = complex(0, -1) * 2 * np.pi * fftshift(Az)
-    Px = np.exp(phi_x)
-
-    cor_img = apply_wavefront(img_target=image, z_poly=Px)
-
-    return image_entropy(cor_img)
-
-
-def add_noise(img, g_var=0.005, s_var=0.1):
-    img_noise = random_noise(img, mode='gaussian', var=g_var)
-    return random_noise(img_noise, mode='speckle', var=s_var)
+def load_zernike_coefficients(no_terms, A_true_flat):
+    if A_true_flat:
+        np.random.seed(20)
+        sigma, mu = np.random.random(size=2)
+        A = mu + sigma * 20 * np.random.random(size=no_terms)
+    else:
+        np.random.seed(None)
+        A = np.random.random(size=no_terms)
+    return A
 
 
 def correct_image(img_target=None, cor_coes=None):
@@ -215,19 +190,54 @@ def correct_image(img_target=None, cor_coes=None):
     return apply_wavefront(img_target=img_target, z_poly=Px)
 
 
+def add_noise(img, g_var=0.005, s_var=0.1):
+    img_noise = random_noise(img, mode='gaussian', var=g_var)
+    return random_noise(img_noise, mode='speckle', var=s_var)
+
+
+def image_entropy(img_target=None):
+    """
+    implementation of image entropy using Eq(10)
+    from the reference[1]
+    :param image: 2D array
+    :return: entropy of the image
+    """
+    temp_img = normalize_image(img_target)
+    entropy = 0
+    for i in range(temp_img.shape[0]):
+        for j in range(temp_img.shape[1]):
+            intensity_value = temp_img[i, j]
+            if intensity_value != 0:  # avoid log(0) error/warning
+                entropy -= intensity_value * np.log(intensity_value)
+            else:
+                pass
+
+    return entropy
+
+
+def cost_func(Az, image):
+    phi_x = complex(0, -1) * 2 * np.pi * fftshift(Az)
+    Px = np.exp(phi_x)
+
+    cor_img = apply_wavefront(img_target=image, z_poly=Px)
+
+    return image_entropy(cor_img)
+
+
 if __name__ == '__main__':
-    # np.random.seed(2022)
+
     no_terms = 1
-    A_true = load_zernike_coefficients(no_terms=no_terms, A_true_flat=True)
+    A_true = load_zernike_coefficients(no_terms=no_terms,
+                                       A_true_flat=True)
 
     image_plist = glob.glob('../test images/*.png')
     img_no = -1
     img = cv.imread(image_plist[int(img_no)])
     img_gray = rgb2gray(img)
 
-    img_noise = add_noise(img_gray)
+    # img_noise = add_noise(img_gray)
 
-    ab_img = aberrate(img_noise, A_true)
+    ab_img = aberrate(img_gray, A_true)
 
     Zo = construct_zernike(A_true, N=512)
 
@@ -240,10 +250,15 @@ if __name__ == '__main__':
                      # gamma_val=0.101,
                      alpha_val=2,
                      gamma_val=1,
-                     max_iter=200, img_target=ab_img, zernike=Zo)
+                     max_iter=5,
+                     img_target=ab_img,
+                     zernike=Zo)
     #
+    # vanilla or momentum
+    optimizer_type = 'vanilla'
 
-    A_estimate, costval, A_values = optimizer.minimise(A_initial)
+    A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_initial,
+                                                       optimizer_type=optimizer_type)
     print('done')
 
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -252,7 +267,7 @@ if __name__ == '__main__':
     ax[0, 0].axis('off')
     ax[0, 0].set_title('aberrant image')
 
-    cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
+    cor_img = correct_image(img_target=ab_img, cor_coes=A_true-0.2)
     ax[0, 1].imshow(normalize_image(cor_img), vmin=0, vmax=1)
 
     ax[0, 1].axis('off')
@@ -272,7 +287,7 @@ if __name__ == '__main__':
     # ax[1,1].axhline(y= image_entropy(img_gray), xmin=0, xmax=1,color = 'red',linestyle ='--' )
     ax[1, 1].set_xlabel('iterations')
     ax[1, 1].set_ylabel('cost function values')
-    fig.suptitle('SPSA based computational adaptive optics(CAO)')
+    fig.suptitle('SPSA based computational adaptive optics(CAO): %s' % optimizer_type)
 
     plt.tight_layout()
     plt.show()

@@ -57,7 +57,7 @@ class spsa:
                 current_theta = current_theta + - a_k * g_hat
             elif optimizer_type == 'momentum':
 
-                vk_next = - a_k * g_hat + 0.3 * vk
+                vk_next = - a_k * g_hat + 0.15 * vk
                 current_theta = current_theta + vk_next
                 vk = vk_next
             else:
