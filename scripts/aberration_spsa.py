@@ -66,6 +66,8 @@ class spsa:
 
             # update the estimate of the parameter
             current_Aw = current_Aw - a_k * g_hat
+            # current_Aw = current_Aw + 4 * (loss_plus - loss_minus) * (Aw_plus - Aw_minus)
+            # current_Aw = current_Aw + 4 * (loss_plus - loss_minus) * g_hat
 
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
@@ -80,10 +82,10 @@ def aberrate(img_target=None, abe_coes=None):
     W_temp = construct_zernike(abe_coes, N=512)
     W = zernike_plane(abe_coes, W_temp)
     # # shift zero frequency to align with wavefront
-    phi_o = complex(0, 1) * 2 * np.pi * fftshift(W)
+    phi_o = complex(0, 1) * 2 * np.pi * W
     Po = np.exp(phi_o)
 
-    return apply_wavefront(img_target = img_target, z_poly = Po)
+    return apply_wavefront(img_target=img_target, z_poly=Po)
 
 
 def normalize_image(img_target):
@@ -154,7 +156,7 @@ def image_entropy(img_target=None):
     return entropy
 
 
-def load_zernike_coefficients(no_terms,A_true_flat):
+def load_zernike_coefficients(no_terms, A_true_flat):
     if A_true_flat:
         np.random.seed(20)
         sigma, mu = np.random.random(size=2)
@@ -195,9 +197,7 @@ def cost_func(Az, image):
 
     cor_img = apply_wavefront(img_target=image, z_poly=Px)
 
-    entropy_value = image_entropy(cor_img)
-
-    return entropy_value
+    return image_entropy(cor_img)
 
 
 def add_noise(img, g_var=0.005, s_var=0.1):
@@ -205,22 +205,20 @@ def add_noise(img, g_var=0.005, s_var=0.1):
     return random_noise(img_noise, mode='speckle', var=s_var)
 
 
-def correct_image(img=None, cor_coes=None):
+def correct_image(img_target=None, cor_coes=None):
     W_temp = construct_zernike(cor_coes, N=512)
     W = zernike_plane(cor_coes, W_temp)
 
-    phi_x = complex(0, -1) * 2 * np.pi * fftshift(W)
+    phi_x = complex(0, -1) * 2 * np.pi * W
     Px = np.exp(phi_x)
 
-    # cj_img = apply_wavefront(img, Px)
-
-    return apply_wavefront(img_target=img, z_poly=Px)
+    return apply_wavefront(img_target=img_target, z_poly=Px)
 
 
 if __name__ == '__main__':
     # np.random.seed(2022)
     no_terms = 1
-    A_true = load_zernike_coefficients(no_terms=no_terms,A_true_flat = True)
+    A_true = load_zernike_coefficients(no_terms=no_terms, A_true_flat=True)
 
     image_plist = glob.glob('../test images/*.png')
     img_no = -1
@@ -234,16 +232,17 @@ if __name__ == '__main__':
     Zo = construct_zernike(A_true, N=512)
 
     A_initial = load_zernike_coefficients(no_terms=no_terms,
-                                          A_true_flat = False)
+                                          A_true_flat=False)
 
     optimizer = spsa(loss_function=cost_func,
                      a=9e-1, c=1.0,
-                     alpha_val=0.601,
-                     gamma_val=0.101,
-                     # alpha_val=3,
-                     # gamma_val=1,
-                     max_iter=10, img_target=ab_img, zernike=Zo)
+                     # alpha_val=0.601,
+                     # gamma_val=0.101,
+                     alpha_val=2,
+                     gamma_val=1,
+                     max_iter=200, img_target=ab_img, zernike=Zo)
     #
+
     A_estimate, costval, A_values = optimizer.minimise(A_initial)
     print('done')
 
@@ -253,7 +252,7 @@ if __name__ == '__main__':
     ax[0, 0].axis('off')
     ax[0, 0].set_title('aberrant image')
 
-    cor_img = correct_image(img=ab_img, cor_coes=A_true)
+    cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
     ax[0, 1].imshow(normalize_image(cor_img), vmin=0, vmax=1)
 
     ax[0, 1].axis('off')

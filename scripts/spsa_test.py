@@ -30,10 +30,11 @@ class spsa:
         """Evalute the cost/loss function with a value of theta"""
         return self.loss(current_theta, self.args)
 
-    def minimise(self, current_theta):
+    def minimise(self, current_theta, optimizer_type = 'vanilla'):
         k = 0  # initialize count
 
         cost_func_val = []
+        vk = 0
         while k < self.max_iter:
             # get the current values for gain sequences
             a_k = self.a / (k + 1 + self.A) ** self.alpha
@@ -52,12 +53,16 @@ class spsa:
             # compute the estimate of the gradient
             g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
-            # # gradient normalization
-            # gmax = np.abs(np.max(g_hat))
-            # g_hat = g_hat/gmax
+            if optimizer_type == 'vanilla':
+                current_theta = current_theta + - a_k * g_hat
+            elif optimizer_type == 'momentum':
 
-            # update the estimate of the parameter
-            current_theta = current_theta - a_k * g_hat
+                vk_next = - a_k * g_hat + 0.3 * vk
+                current_theta = current_theta + vk_next
+                vk = vk_next
+            else:
+                pass
+
             k += 1
 
             cost_val = self.calc_loss(current_theta)
@@ -103,9 +108,18 @@ if __name__ == "__main__":
 
     optimizer = spsa(loss_function=calc_loss,
                      a=9e-1, c=1.0, alpha=0.602, gamma=0.101,
-                     max_iter=1000, args=(x, y))
+                     max_iter=200, args=(x, y))
 
-    W_estimate, costval = optimizer.minimise(W_initial)
+    #vanilla or momentum
+    optimizer_type = 'momentum'
+    W_estimate, costval = optimizer.minimise( current_theta = W_initial, optimizer_type =optimizer_type)
+
+
+    # print("The estimate value of W is: \n " + str(W_estimate))
+
+    discrepancy = np.std(W_estimate - W_true)
+    print("The discrepancy value of estimation is: \n " + str(discrepancy))
+
 
     if output_dim == 1:
         fig, ax = plt.subplots(1, 2, figsize=(16, 9))
@@ -117,11 +131,10 @@ if __name__ == "__main__":
         ax[1].plot(np.arange(len(costval)),  costval)
         ax[1].set_xlabel('iteration')
         ax[1].set_ylabel('cost function values')
-        fig.suptitle('benchmark performance for SPSA')
-
+        ax[1].set_ylabel('cost function values')
+        fig.suptitle('benchmark performance for SPSA: %s\n discrepancy value: %.4f'%(optimizer_type,discrepancy))
         plt.tight_layout()
         plt.show()
     else:
         pass
 
-    print("The estimate value of W is: \n " + str(W_estimate))
