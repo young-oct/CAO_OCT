@@ -16,7 +16,10 @@ from tools import plot
 
 
 class spsa:
-    def __init__(self, loss_function, a, c, alpha_val, gamma_val, max_iter, img_target, zernike):
+    def __init__(self, loss_function, a, c, alpha_val,
+                 gamma_val, max_iter, img_target, zernike,
+                 momentum = 0.2,
+                 cal_tolerance = 1e-6):
         # Initialize gain parameters and decay factors
         self.a = a
         self.c = c
@@ -31,6 +34,8 @@ class spsa:
         self.zernike = zernike
 
         self.initial_entropy = image_entropy(self.img_target)
+        self.momentum = momentum
+        self.cal_tolerance = cal_tolerance
 
     def calc_loss(self, current_Aw):
         Az = self.update_AZ(current_Aw)
@@ -40,7 +45,7 @@ class spsa:
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def minimise(self, current_Aw, optimizer_type='vanilla', cal_tolerance=1e-6 ):
+    def minimise(self, current_Aw, optimizer_type='vanilla'):
         k = 0  # initialize count
 
         cost_func_val = []
@@ -50,7 +55,7 @@ class spsa:
         previous_Aw = 0
 
         while k < self.max_iter and \
-                np.abs(previous_Aw - current_Aw) > cal_tolerance:
+                np.linalg.norm(previous_Aw - current_Aw) > self.cal_tolerance:
 
             previous_Aw = current_Aw
             # get the current values for gain sequences
@@ -75,11 +80,11 @@ class spsa:
 
             # update the estimate of the parameter
             if optimizer_type == 'vanilla':
-                current_Aw = current_Aw + - a_k * g_hat
+                current_Aw = current_Aw - a_k * g_hat
             elif optimizer_type == 'momentum':
 
-                vk_next = - a_k * g_hat + 0.15 * vk
-                current_Aw = current_Aw + vk_next
+                vk_next = a_k * g_hat + self.momentum * vk
+                current_Aw = current_Aw - vk_next
                 vk = vk_next
             elif optimizer_type == 'SPGD':
                 current_Aw = current_Aw + loss_delta * Aw_delta
@@ -231,7 +236,7 @@ def cost_func(Az, image):
 
 
 if __name__ == '__main__':
-    no_terms = 1
+    no_terms = 2
     A_true = load_zernike_coefficients(no_terms=no_terms,
                                        A_true_flat=True)
 
@@ -249,6 +254,8 @@ if __name__ == '__main__':
     A_initial = load_zernike_coefficients(no_terms=no_terms,
                                           A_true_flat=False)
 
+    tolerance = 1e-6
+
     optimizer = spsa(loss_function=cost_func,
                      a=9e-1, c=1.0,
                      # alpha_val=0.601,
@@ -257,14 +264,14 @@ if __name__ == '__main__':
                      gamma_val=1,
                      max_iter=200,
                      img_target=ab_img,
-                     zernike=Zo)
+                     zernike=Zo,
+                     momentum = 0.15,
+                     cal_tolerance=tolerance)
     #
     # vanilla or momentum
-    optimizer_type = 'vanilla'
-    tolerance = 1e-6
+    optimizer_type = 'momentum'
     A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_initial,
-                                                       optimizer_type=optimizer_type,
-                                                       cal_tolerance=tolerance)
+                                                       optimizer_type=optimizer_type)
     print('done')
 
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))

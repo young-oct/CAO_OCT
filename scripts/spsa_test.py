@@ -13,7 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 class spsa:
-    def __init__(self, loss_function, a, c, alpha, gamma, max_iter, args=()):
+    def __init__(self, loss_function, a, c, alpha, gamma, max_iter, args=(),
+        momentum = 0.2,cal_tolerance = 1e-6):
         # Initialize gain parameters and decay factors
         self.a = a
         self.c = c
@@ -26,11 +27,14 @@ class spsa:
         self.A = max_iter / 10
         self.args = args
 
+        self.momentum = momentum
+        self.cal_tolerance = cal_tolerance
+
     def calc_loss(self, current_theta):
         """Evalute the cost/loss function with a value of theta"""
         return self.loss(current_theta, self.args)
 
-    def minimise(self, current_theta, optimizer_type = 'vanilla',cal_tolerance=1e-6):
+    def minimise(self, current_theta, optimizer_type = 'vanilla'):
         k = 0  # initialize count
 
         cost_func_val = []
@@ -38,7 +42,7 @@ class spsa:
         previous_theta = 0
 
         while k < self.max_iter and \
-                np.linalg.norm(previous_theta - current_theta) > cal_tolerance:
+                np.linalg.norm(previous_theta - current_theta) > self.cal_tolerance:
 
             previous_theta = current_theta
             # get the current values for gain sequences
@@ -59,11 +63,11 @@ class spsa:
             g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
             if optimizer_type == 'vanilla':
-                current_theta = current_theta + - a_k * g_hat
+                current_theta = current_theta - a_k * g_hat
             elif optimizer_type == 'momentum':
 
-                vk_next = - a_k * g_hat + 0.3 * vk
-                current_theta = current_theta + vk_next
+                vk_next = a_k * g_hat + self.momentum * vk
+                current_theta = current_theta - vk_next
                 vk = vk_next
             else:
                 pass
@@ -104,24 +108,24 @@ if __name__ == "__main__":
 
     np.random.seed(13)
     x = np.random.rand(input_dim, N)
-    W_true = np.random.rand(output_dim, input_dim)
+    W_true = 2*np.random.rand(output_dim, input_dim)
     print("The true value of W is: \n " + str(W_true))
     noise = np.random.rand(N)
-    y = np.matmul(W_true, x) + noise * 0.2
+    y = np.matmul(W_true, x) + noise * 0.5
 
     W_initial = np.random.rand(output_dim, input_dim)
+    tolerance = 1e-5
 
     optimizer = spsa(loss_function=calc_loss,
                      a=9e-1, c=1.0, alpha=0.602, gamma=0.101,
-                     max_iter=1000, args=(x, y))
+                     max_iter=1000, args=(x, y),
+                     momentum=0.15,
+                     cal_tolerance=tolerance)
 
     #vanilla or momentum
-    tolerance = 1e-5
-
     optimizer_type = 'vanilla'
-    W_estimate, costval = optimizer.minimise( current_theta = W_initial,
-                                              optimizer_type =optimizer_type,
-                                              cal_tolerance=tolerance)
+    W_estimate, costval = optimizer.minimise(current_theta = W_initial,
+                                              optimizer_type =optimizer_type)
 
 
     # print("The estimate value of W is: \n " + str(W_estimate))
