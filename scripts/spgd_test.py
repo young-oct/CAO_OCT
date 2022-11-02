@@ -60,7 +60,7 @@ class spgd:
             loss_minus = self.calc_loss(theta_minus)
 
             # compute the estimate of the gradient
-            g_hat = (loss_plus - loss_minus) * delta / np.abs(delta)
+            g_hat = (loss_plus - loss_minus) * delta / (2*np.abs(delta))
             # g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
             # if optimizer_type == 'vanilla':
@@ -115,11 +115,11 @@ if __name__ == "__main__":
     y = np.matmul(W_true, x) + noise * 0.5
 
     W_initial = np.random.rand(output_dim, input_dim)
-    tolerance = 1e-5
+    tolerance = 1e-7
 
     optimizer = spgd(loss_function=calc_loss,
                      a=9e-1, c=1.0, alpha=0.602, gamma=0.101,
-                     max_iter=1000, args=(x, y),
+                     max_iter=2000, args=(x, y),
                      # momentum=0.15,
                      cal_tolerance=tolerance)
     #
