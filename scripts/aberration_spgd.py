@@ -3,6 +3,7 @@
 # @Author  : young wang
 # @FileName: aberration_spgd.py
 # @Software: PyCharm
+import copy
 
 from scipy.special import gamma
 from scipy.fftpack import fftshift, fft2, ifft2
@@ -20,8 +21,8 @@ class spsa:
                  # a, c,
                  alpha_val,
                  gamma_val, max_iter, img_target, zernike,
-                 # momentum = 0.2,
-                 cal_tolerance = 1e-6):
+                 momentum = 0.2,
+                 cal_tolerance=1e-6):
         # Initialize gain parameters and decay factors
         # self.a = a
         # self.c = c
@@ -36,41 +37,51 @@ class spsa:
         self.zernike = zernike
 
         self.initial_entropy = image_entropy(self.img_target)
-        # self.momentum = momentum
+        self.momentum = momentum
         self.cal_tolerance = cal_tolerance
 
     def calc_loss(self, current_Aw):
+        # print('current_Aw: %s' %str(current_Aw))
+
         Az = self.update_AZ(current_Aw)
-        """Evalute the cost/loss function with a value of theta"""
+        # print(Az[0][0])
+        # print('Az: %s' %str(Az))
+        """Evaluate the cost/loss function with a value of theta"""
         return self.loss(Az, self.img_target)
 
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def minimise(self, current_Aw):
-                 # optimizer_type='vanilla'):
+    def minimise(self, current_Aw, optimizer_type='vanilla', verbose=False):
         k = 0  # initialize count
-
         cost_func_val = []
         Aw_values = []
         vk = 0
 
         previous_Aw = 0
+        # while k < self.max_iter:
 
         while k < self.max_iter and \
                 np.linalg.norm(previous_Aw - current_Aw) > self.cal_tolerance:
 
             previous_Aw = current_Aw
+            cost_val = self.calc_loss(current_Aw)
+
             # get the current values for gain sequences
             # a_k = self.a / (k + 1 + self.A) ** self.alpha_val
             # c_k = self.c / (k + 1) ** self.gamma_val
+            if verbose:
+                print('iteration %d: %s with cost function value %.2f' % (k, str(current_Aw), cost_val))
+            else:
+                pass
+
 
             # get the random perturbation vector Bernoulli distribution with p=0.5
-            delta_intermediate = (np.random.randint(0, 2, current_Aw.shape) * 2 - 1)
-            delta = delta_intermediate/np.max(delta_intermediate)
+            delta = (np.random.randint(0, 2, current_Aw.shape) * 2 - 1) * self.gamma_val
 
-            Aw_plus = current_Aw + delta * self.gamma_val
-            Aw_minus = current_Aw - delta * self.gamma_val
+
+            Aw_plus = current_Aw + delta
+            Aw_minus = current_Aw - delta
 
             # measure the loss function at perturbations
             loss_plus = self.calc_loss(Aw_plus)
@@ -80,28 +91,33 @@ class spsa:
             # Aw_delta = Aw_plus - Aw_minus
 
             # compute the estimate of the gradient
-            g_hat = (loss_plus - loss_minus) * delta / np.abs(delta)
+            g_hat = (loss_plus - loss_minus) * delta
 
-            current_Aw = current_Aw - self.alpha_val * g_hat
+            # # update the estimate of the parameter
+            if optimizer_type == 'vanilla':
+                current_Aw = current_Aw - self.alpha_val * g_hat
 
-            # update the estimate of the parameter
-            # if optimizer_type == 'vanilla':
-            #     current_Aw = current_Aw - a_k * g_hat
-            # elif optimizer_type == 'momentum':
-            #
-            #     vk_next = a_k * g_hat + self.momentum * vk
-            #     current_Aw = current_Aw - vk_next
-            #     vk = vk_next
-            # elif optimizer_type == 'SPGD':
-            #     current_Aw = current_Aw + loss_delta * Aw_delta
-            #
+            elif optimizer_type == 'momentum':
+
+                vk_next = self.alpha_val * g_hat + self.momentum * vk
+                current_Aw = current_Aw - vk_next
+                vk = vk_next
+            else:
+                pass
+
+
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
             Aw_values.append(current_Aw)
-            #
+
             k += 1
 
-        return current_Aw, cost_func_val, Aw_values
+        sol_idx = np.argmin(cost_func_val)
+        Aw_estimate = Aw_values[sol_idx]
+        print('optimal solution is found at %d iteration' % sol_idx)
+
+
+        return Aw_estimate, cost_func_val
 
 
 def aberrate(img_target=None, abe_coes=None):
@@ -233,11 +249,11 @@ def image_entropy(img_target=None):
 
 
 def cost_func(Az, image):
-    phi_x = complex(0, -1) * 2 * np.pi * fftshift(Az)
+    phi_x = complex(0, -1) * 2 * np.pi * Az
+
     Px = np.exp(phi_x)
 
     cor_img = apply_wavefront(img_target=image, z_poly=Px)
-
     return image_entropy(cor_img)
 
 
@@ -251,34 +267,35 @@ if __name__ == '__main__':
     img = cv.imread(image_plist[int(img_no)])
     img_gray = rgb2gray(img)
 
-    # img_noise = add_noise(img_gray)
-
     ab_img = aberrate(img_gray, A_true)
 
     Zo = construct_zernike(A_true, N=512)
-
-    A_initial = load_zernike_coefficients(no_terms=no_terms,
-                                          A_true_flat=False)
-
     tolerance = 1e-6
 
     optimizer = spsa(loss_function=cost_func,
                      # a=9e-1, c=1.0,
-                     # alpha_val=0.601,
-                     # gamma_val=0.101,
-                     alpha_val=2,
-                     gamma_val=1,
-                     max_iter=200,
+                     alpha_val=1,
+                     gamma_val=0.01,
+                     max_iter=100,
                      img_target=ab_img,
                      zernike=Zo,
-                     # momentum = 0.15,
+                     momentum = 0.15,
                      cal_tolerance=tolerance)
     #
     # vanilla or momentum
-    optimizer_type = 'momentum'
-    A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_initial)
-                                                       # optimizer_type=optimizer_type)
-    print('done')
+    optimizer_type = 'vanilla'
+    A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
+                                          A_true_flat=False))
+
+    A_estimate, costval = optimizer.minimise(current_Aw=A_initial,
+                                                        optimizer_type=optimizer_type,
+                                                        verbose=True)
+
+
+
+    img_cor = correct_image(ab_img, A_true)
+    loss_groud_truth = image_entropy(img_cor)
+    # print('true entropy: %.2f' % loss_groud_truth)
 
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))
     ax[0, 0].imshow(normalize_image(ab_img), vmin=0, vmax=1)
@@ -294,22 +311,18 @@ if __name__ == '__main__':
 
     x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
 
-    ax[1, 0].bar(x_axis + .25, A_estimate.squeeze(), width=0.5, label='guess value')
-    ax[1, 0].bar(x_axis - 0.25, A_true.squeeze(), width=0.5, label='ground truth')
+    ax[1, 0].bar(x_axis - 0.15, A_initial.squeeze(), width=0.15, label='initial guess')
+    ax[1, 0].bar(x_axis, A_estimate.squeeze(), width=0.15, label='guess value')
+    ax[1, 0].bar(x_axis + 0.15, A_true.squeeze(), width=0.15, label='ground truth')
 
-    ax[1, 0].legend()
+    ax[1, 0].legend(loc='best')
     ax[1, 0].set_xlabel('zernike terms')
     ax[1, 0].set_ylabel('numerical values')
 
-    image_entropy(img_gray)
     ax[1, 1].plot(np.arange(len(costval)), costval)
-    # ax[1,1].axhline(y= image_entropy(img_gray), xmin=0, xmax=1,color = 'red',linestyle ='--' )
     ax[1, 1].set_xlabel('iterations')
     ax[1, 1].set_ylabel('cost function values')
-    fig.suptitle('SPSA based computational adaptive optics(CAO): %s' % optimizer_type)
+    fig.suptitle('SPGD based computational adaptive optics(CAO): %s' % optimizer_type)
 
     plt.tight_layout()
-    plt.show()
-
-    plt.plot(A_values)
     plt.show()

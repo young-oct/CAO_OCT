@@ -69,6 +69,11 @@ class spsa:
             Aw_minus = current_Aw - delta * c_k
 
             # measure the loss function at perturbations
+            if k == 0:
+                print(self.calc_loss(current_Aw))
+            else:
+                pass
+
             loss_plus = self.calc_loss(Aw_plus)
             loss_minus = self.calc_loss(Aw_minus)
 
@@ -227,7 +232,7 @@ def image_entropy(img_target=None):
 
 
 def cost_func(Az, image):
-    phi_x = complex(0, -1) * 2 * np.pi * fftshift(Az)
+    phi_x = complex(0, -1) * 2 * np.pi * Az
     Px = np.exp(phi_x)
 
     cor_img = apply_wavefront(img_target=image, z_poly=Px)
@@ -262,15 +267,15 @@ if __name__ == '__main__':
                      # gamma_val=0.101,
                      alpha_val=2,
                      gamma_val=1,
-                     max_iter=200,
+                     max_iter=50,
                      img_target=ab_img,
                      zernike=Zo,
                      momentum = 0.15,
                      cal_tolerance=tolerance)
     #
     # vanilla or momentum
-    optimizer_type = 'momentum'
-    A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_initial,
+    optimizer_type = 'vanilla'
+    A_estimate, costval, A_values = optimizer.minimise(current_Aw=A_true,
                                                        optimizer_type=optimizer_type)
     print('done')
 

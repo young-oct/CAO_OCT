@@ -60,8 +60,9 @@ class spgd:
             loss_minus = self.calc_loss(theta_minus)
 
             # compute the estimate of the gradient
+            # g_hat = (loss_plus - loss_minus) * delta
+
             g_hat = (loss_plus - loss_minus) * delta / (2*np.abs(delta))
-            # g_hat = (loss_plus - loss_minus) / (2.0 * delta * c_k)
 
             # if optimizer_type == 'vanilla':
             current_theta = current_theta - self.alpha * g_hat
