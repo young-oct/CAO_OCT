@@ -16,7 +16,7 @@ import numpy as np
 from tools import plot
 
 
-class spsa:
+class spdg:
     def __init__(self, loss_function,
                  # a, c,
                  alpha_val,
@@ -87,11 +87,11 @@ class spsa:
             loss_plus = self.calc_loss(Aw_plus)
             loss_minus = self.calc_loss(Aw_minus)
 
-            # loss_delta = (loss_plus - loss_minus) / 2.0
+            loss_delta = (loss_plus - loss_minus)
             # Aw_delta = Aw_plus - Aw_minus
 
             # compute the estimate of the gradient
-            g_hat = (loss_plus - loss_minus) * delta
+            g_hat = loss_delta * delta
 
             # # update the estimate of the parameter
             if optimizer_type == 'vanilla':
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     Zo = construct_zernike(A_true, N=512)
     tolerance = 1e-6
 
-    optimizer = spsa(loss_function=cost_func,
+    optimizer = spdg(loss_function=cost_func,
                      # a=9e-1, c=1.0,
                      alpha_val=1,
                      gamma_val=0.01,
@@ -289,7 +289,7 @@ if __name__ == '__main__':
 
     A_estimate, costval = optimizer.minimise(current_Aw=A_initial,
                                                         optimizer_type=optimizer_type,
-                                                        verbose=True)
+                                                        verbose=False)
 
 
 
