@@ -126,7 +126,7 @@ class optimization:
                 a_k = self.a / (k + 1 + self.A) ** alpha_val
                 c_k = self.c / (k + 1) ** gamma_val
 
-                g_hat = loss_delta / (2.0 * delta * c_k)
+                g_hat = loss_delta * delta / (2.0 * c_k)
                 current_theta = current_theta - a_k * g_hat
 
             else:
