@@ -130,7 +130,7 @@ class optimization:
                 current_theta = current_theta - a_k * g_hat
 
             else:
-                pass
+                raise ValueError('please input the right optimizer')
 
             k += 1
 
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         else:
             pass
 
-    fig.suptitle('benchmark performance comparsion')
+    fig.suptitle('benchmark performance comparison')
 
     plt.tight_layout()
     plt.show()

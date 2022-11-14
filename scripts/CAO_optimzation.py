@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2022-11-02 17:55
 # @Author  : young wang
-# @FileName: aberration_spgd.py
+# @FileName: CAO_optimzation.py
 # @Software: PyCharm
 import copy
 
@@ -18,14 +18,14 @@ from tools import plot
 
 class optimization:
     def __init__(self, loss_function,
-                 # a, c,
+                 a, c,
                  alpha_val,
                  gamma_val, max_iter, img_target, zernike,
                  momentum = 0.2,
                  cal_tolerance=1e-6):
         # Initialize gain parameters and decay factors
-        # self.a = a
-        # self.c = c
+        self.a = a
+        self.c = c
         self.alpha_val = alpha_val
         self.gamma_val = gamma_val
 
@@ -52,7 +52,11 @@ class optimization:
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def optimizer(self, current_Aw, optimizer_type='vanilla', verbose=False):
+    def minimizer(self, current_Aw, optimizer_type='vanilla',
+                  beta1=0.9,
+                  beta2=0.99,
+                  epsilon=1e-8,
+                  verbose=False):
         k = 0  # initialize count
         cost_func_val = []
         Aw_values = []
@@ -61,15 +65,23 @@ class optimization:
         previous_Aw = 0
         # while k < self.max_iter:
 
+
+        # paramaters for the adam method
+        beta1 = beta1
+        beta2 = beta2
+        epsilon = epsilon
+
+        adam_m = 0
+        adam_v = 0
+
+
         while k < self.max_iter and \
                 np.linalg.norm(previous_Aw - current_Aw) > self.cal_tolerance:
 
             previous_Aw = current_Aw
             cost_val = self.calc_loss(current_Aw)
 
-            # get the current values for gain sequences
-            # a_k = self.a / (k + 1 + self.A) ** self.alpha_val
-            # c_k = self.c / (k + 1) ** self.gamma_val
+
             if verbose:
                 print('iteration %d: %s with cost function value %.2f' % (k, str(current_Aw), cost_val))
             else:
@@ -88,23 +100,47 @@ class optimization:
             loss_minus = self.calc_loss(Aw_minus)
 
             loss_delta = (loss_plus - loss_minus)
-            # Aw_delta = Aw_plus - Aw_minus
-
-            # compute the estimate of the gradient
-            g_hat = loss_delta * delta
 
             # # update the estimate of the parameter
-            if optimizer_type == 'vanilla':
+            if optimizer_type == 'spgd':
+
+                # compute the estimate of the gradient
+                g_hat = loss_delta * delta
                 current_Aw = current_Aw - self.alpha_val * g_hat
 
-            elif optimizer_type == 'momentum':
+            elif optimizer_type == 'spgd-momentum':
+
+                # compute the estimate of the gradient
+                g_hat = loss_delta * delta
 
                 vk_next = self.alpha_val * g_hat + self.momentum * vk
                 current_Aw = current_Aw - vk_next
                 vk = vk_next
-            else:
-                pass
 
+            elif optimizer_type == 'spgd-adam':
+                g_hat = loss_delta * delta
+                adam_m = beta1 * adam_m + (1 - beta1) * g_hat
+                adam_v = beta2 * adam_v + (1 - beta2) * (g_hat ** 2)
+
+                # bias correction for both first and second moments
+
+                alpha_updated = self.alpha_val * np.sqrt(1 - beta2 ** (k + 1)) / (1 - beta1 ** (k + 1))
+                current_Aw = current_Aw - alpha_updated * adam_m / (np.sqrt(adam_v) + epsilon)
+
+
+            elif optimizer_type == 'spsa':
+
+                alp_val = 0.602
+                ga_val = 0.101
+                # get the current values for gain sequences
+                a_k = self.a / (k + 1 + self.A) ** alp_val
+                c_k = self.c / (k + 1) ** ga_val
+
+                g_hat = loss_delta / (2.0 * delta * c_k)
+                current_Aw = current_Aw - a_k * g_hat
+
+            else:
+                raise ValueError('please input the right optimizer')
 
             cost_val = self.calc_loss(current_Aw)
             cost_func_val.append(cost_val.squeeze())
@@ -114,10 +150,10 @@ class optimization:
 
         sol_idx = np.argmin(cost_func_val)
         Aw_estimate = Aw_values[sol_idx]
-        print('optimal solution is found at %d iteration' % sol_idx)
+        # print('optimal solution is found at %d iteration' % sol_idx)
 
 
-        return Aw_estimate, cost_func_val
+        return Aw_estimate, cost_func_val,sol_idx
 
 
 def aberrate(img_target=None, abe_coes=None):
@@ -202,14 +238,18 @@ def zernike_plane(zcof, W_values):
     return W
 
 
-def load_zernike_coefficients(no_terms, A_true_flat):
-    if A_true_flat:
+def load_zernike_coefficients(no_terms, A_true_flat, repeat = False):
+    if A_true_flat and repeat == False:
         np.random.seed(20)
         sigma, mu = np.random.random(size=2)
         A = mu + sigma * 20 * np.random.random(size=no_terms)
-    else:
+    elif repeat == False:
         np.random.seed(None)
         A = np.random.random(size=no_terms)
+    else:
+        np.random.seed(2022)
+        A = np.random.random(size=no_terms)
+
     return A
 
 
@@ -273,7 +313,7 @@ if __name__ == '__main__':
     tolerance = 1e-7
 
     optimizer = optimization(loss_function=cost_func,
-                     # a=9e-1, c=1.0,
+                     a=9e-1, c=1.0,
                      alpha_val = 0.75,
                      gamma_val=0.02,
                      max_iter=200,
@@ -283,46 +323,48 @@ if __name__ == '__main__':
                      cal_tolerance=tolerance)
     #
     # vanilla or momentum
-    optimizer_type = 'momentum'
-    A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
-                                          A_true_flat=False))
+    optimizer_types = ['spgd','spgd-momentum','spgd-adam','spsa']
 
-    A_estimate, costval = optimizer.optimizer(current_Aw=A_initial,
-                                                        optimizer_type=optimizer_type,
-                                                        verbose=False)
+    for i in range(len(optimizer_types)):
+        optimizer_type = optimizer_types[-1]
+        A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
+                                              A_true_flat=False, repeat= True))
+
+        A_estimate, costval,sol_idx = optimizer.minimizer(current_Aw=A_initial,
+                                                            optimizer_type=optimizer_type,
+                                                            verbose=False)
 
 
+        img_cor = correct_image(ab_img, A_true)
+        loss_groud_truth = image_entropy(img_cor)
 
-    img_cor = correct_image(ab_img, A_true)
-    loss_groud_truth = image_entropy(img_cor)
-    # print('true entropy: %.2f' % loss_groud_truth)
+        fig, ax = plt.subplots(2, 2, figsize=(16, 9))
+        ax[0, 0].imshow(normalize_image(ab_img), vmin=0, vmax=1)
 
-    fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-    ax[0, 0].imshow(normalize_image(ab_img), vmin=0, vmax=1)
+        ax[0, 0].axis('off')
+        ax[0, 0].set_title('aberrant image')
 
-    ax[0, 0].axis('off')
-    ax[0, 0].set_title('aberrant image')
+        cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
+        ax[0, 1].imshow(normalize_image(cor_img), vmin=0, vmax=1)
 
-    cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
-    ax[0, 1].imshow(normalize_image(cor_img), vmin=0, vmax=1)
+        ax[0, 1].axis('off')
+        ax[0, 1].set_title('corrected image')
 
-    ax[0, 1].axis('off')
-    ax[0, 1].set_title('corrected image')
+        x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
 
-    x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
+        ax[1, 0].bar(x_axis - 0.15, A_initial.squeeze(), width=0.15, label='initial guess')
+        ax[1, 0].bar(x_axis, A_estimate.squeeze(), width=0.15, label='guess value')
+        ax[1, 0].bar(x_axis + 0.15, A_true.squeeze(), width=0.15, label='ground truth')
 
-    ax[1, 0].bar(x_axis - 0.15, A_initial.squeeze(), width=0.15, label='initial guess')
-    ax[1, 0].bar(x_axis, A_estimate.squeeze(), width=0.15, label='guess value')
-    ax[1, 0].bar(x_axis + 0.15, A_true.squeeze(), width=0.15, label='ground truth')
+        ax[1, 0].legend(loc='best')
+        ax[1, 0].set_xlabel('zernike terms')
+        ax[1, 0].set_ylabel('numerical values')
 
-    ax[1, 0].legend(loc='best')
-    ax[1, 0].set_xlabel('zernike terms')
-    ax[1, 0].set_ylabel('numerical values')
+        ax[1, 1].plot(np.arange(len(costval)), costval)
+        ax[1, 1].set_xlabel('iterations')
+        ax[1, 1].set_ylabel('cost function values')
+        fig.suptitle('%s based computational adaptive optics(CAO)\n'
+                     'solution found at iteration %d' % (optimizer_type,sol_idx))
 
-    ax[1, 1].plot(np.arange(len(costval)), costval)
-    ax[1, 1].set_xlabel('iterations')
-    ax[1, 1].set_ylabel('cost function values')
-    fig.suptitle('SPGD based computational adaptive optics(CAO): %s' % optimizer_type)
-
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
