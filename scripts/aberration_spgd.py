@@ -16,7 +16,7 @@ import numpy as np
 from tools import plot
 
 
-class spdg:
+class optimization:
     def __init__(self, loss_function,
                  # a, c,
                  alpha_val,
@@ -52,7 +52,7 @@ class spdg:
     def update_AZ(self, current_Aw):
         return zernike_plane(current_Aw, self.zernike)
 
-    def minimise(self, current_Aw, optimizer_type='vanilla', verbose=False):
+    def optimizer(self, current_Aw, optimizer_type='vanilla', verbose=False):
         k = 0  # initialize count
         cost_func_val = []
         Aw_values = []
@@ -270,24 +270,24 @@ if __name__ == '__main__':
     ab_img = aberrate(img_gray, A_true)
 
     Zo = construct_zernike(A_true, N=512)
-    tolerance = 1e-6
+    tolerance = 1e-7
 
-    optimizer = spdg(loss_function=cost_func,
+    optimizer = optimization(loss_function=cost_func,
                      # a=9e-1, c=1.0,
-                     alpha_val=1,
-                     gamma_val=0.01,
-                     max_iter=100,
+                     alpha_val = 0.75,
+                     gamma_val=0.02,
+                     max_iter=200,
                      img_target=ab_img,
                      zernike=Zo,
                      momentum = 0.15,
                      cal_tolerance=tolerance)
     #
     # vanilla or momentum
-    optimizer_type = 'vanilla'
+    optimizer_type = 'momentum'
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                           A_true_flat=False))
 
-    A_estimate, costval = optimizer.minimise(current_Aw=A_initial,
+    A_estimate, costval = optimizer.optimizer(current_Aw=A_initial,
                                                         optimizer_type=optimizer_type,
                                                         verbose=False)
 
