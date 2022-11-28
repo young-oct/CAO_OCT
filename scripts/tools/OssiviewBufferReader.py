@@ -126,11 +126,7 @@ class OssiviewBufferReader:
                 if key == buffer["Common Name"]:
                     bufferHeader["Buffer ID"] = buffer["Buffer ID"]
 
-            Dim = {}
-            Dim["N"] = np.shape(buf)[0]
-            Dim["Y"] = np.shape(buf)[1]
-            Dim["X"] = np.shape(buf)[2]
-            Dim["Z"] = np.shape(buf)[3]
+            Dim = {"N": np.shape(buf)[0], "Y": np.shape(buf)[1], "X": np.shape(buf)[2], "Z": np.shape(buf)[3]}
             if key == "Doppler Buffer":
                 Dim["Z"] = int(Dim["Z"] / 2)
             bufferHeader["Dim"] = Dim
@@ -156,11 +152,7 @@ class OssiviewBufferReader:
     def exportV2(self, filePath):
 
         buf = self.data
-        Dim = {}
-        Dim["N"] = np.shape(buf)[0]
-        Dim["Y"] = np.shape(buf)[1]
-        Dim["X"] = np.shape(buf)[2]
-        Dim["Z"] = np.shape(buf)[3] // 2
+        Dim = {"N": np.shape(buf)[0], "Y": np.shape(buf)[1], "X": np.shape(buf)[2], "Z": np.shape(buf)[3] // 2}
 
         self.metaData['DataParameters'][0]['Dim'] = Dim
 
