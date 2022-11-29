@@ -26,6 +26,6 @@ if __name__ == '__main__':
 
     norm_vol = (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)
 
-    plt.imshow(norm_vol[:,128,:], 'gray',vmin=0.8, vmax=1)
+    plt.imshow(norm_vol[:,:,245], 'gray',vmin=0.5, vmax=1)
     plt.show()
 

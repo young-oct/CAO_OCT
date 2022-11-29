@@ -10,9 +10,6 @@ import struct
 from scipy.fft import fft, ifft, rfft, irfft
 from scipy import signal
 
-eps = 1e-14
-
-
 def AverageAlineGroups(alineData, navg=5):
     # Calculate the complex average within groups
     imavg = np.zeros([alineData.shape[0], alineData.shape[1] // navg, alineData.shape[2]], dtype=np.complex64)
@@ -132,7 +129,6 @@ def loader(file_path, radius = 128,top = 30):
     dataHeader = struct.unpack(r'II', datastr)
 
     numRecords = dataHeader[0]
-    print(numRecords)
     numSamples = dataHeader[1]
 
     numFrames = int(np.ceil(Aline_coords.shape[0] * 5 / numRecords))
@@ -151,15 +147,13 @@ def loader(file_path, radius = 128,top = 30):
         Aline_average = AverageAlineGroups(alineData)
         temp = Aline_average.reshape((-1, Aline_average.shape[-1]))
 
-        vol = np.zeros((int(radius*2), int(radius*2), zdim), dtype=temp.dtype)
+        vol = np.ones((int(radius*2), int(radius*2), zdim), dtype=temp.dtype)
 
         for i in range(Aline_coords.shape[0]):
             x_idx = Aline_coords[i][0]
             y_idx = Aline_coords[i][1]
 
             vol[x_idx, y_idx, :] = temp[i, :]
-
-        vol += eps
 
     return vol/np.linalg.norm(vol)
 
