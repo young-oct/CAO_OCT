@@ -9,13 +9,15 @@ import numpy as np
 import struct
 from scipy.fft import fft, ifft, rfft, irfft
 from scipy import signal
+from numba import njit
+
 
 def AverageAlineGroups(alineData, navg=5):
     # Calculate the complex average within groups
     imavg = np.zeros([alineData.shape[0], alineData.shape[1] // navg, alineData.shape[2]], dtype=np.complex64)
     for j in range(0, alineData.shape[0]):
         for n, k in enumerate(range(0, alineData.shape[1], navg)):
-            imavg[j, n, :] = np.mean(alineData[j, k:(k + navg), :], axis = 0)
+            imavg[j, n, :] = np.mean(alineData[j, k:(k + navg), :], axis=0)
 
     return imavg
 
@@ -118,8 +120,7 @@ class spiral_coordinates:
         return np.asarray(xy_list)
 
 
-def loader(file_path, radius = 128,top = 30):
-
+def loader(file_path, radius=128, top=30):
     Aline_coords = spiral_coordinates(radius=radius).xyloc
 
     # Load in header info
@@ -147,7 +148,7 @@ def loader(file_path, radius = 128,top = 30):
         Aline_average = AverageAlineGroups(alineData)
         temp = Aline_average.reshape((-1, Aline_average.shape[-1]))
 
-        vol = np.ones((int(radius*2), int(radius*2), zdim), dtype=temp.dtype)
+        vol = np.ones((int(radius * 2), int(radius * 2), zdim), dtype=temp.dtype)
 
         for i in range(Aline_coords.shape[0]):
             x_idx = Aline_coords[i][0]
@@ -155,6 +156,13 @@ def loader(file_path, radius = 128,top = 30):
 
             vol[x_idx, y_idx, :] = temp[i, :]
 
-    return vol/np.linalg.norm(vol)
+    return vol / np.linalg.norm(vol)
 
-
+def complex2int(Aline_vol):
+    """
+    converts complex volume into intensity volume for imshow
+    :param Aline_vol: 3D array
+    :return: normalized to [0,1] intensity volume
+    """
+    mag_vol = 20 * np.log10(abs(Aline_vol))
+    return (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)
