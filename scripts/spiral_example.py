@@ -20,7 +20,7 @@ if __name__ == '__main__':
     folder_path = '../data/Ossiview complex/*.bin'
     file_path = natsorted(glob.glob(folder_path))
 
-    Aline_vol = loader(file_path[0])
+    Aline_vol = loader(file_path[-1])
 
     mag_vol = 20*np.log10(abs(Aline_vol))
 

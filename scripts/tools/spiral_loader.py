@@ -131,11 +131,11 @@ def loader(file_path, radius = 128,top = 30):
         datastr = f.read(headerLen)
     dataHeader = struct.unpack(r'II', datastr)
 
-
     numRecords = dataHeader[0]
+    print(numRecords)
     numSamples = dataHeader[1]
-    numFrames = int(np.ceil(Aline_coords.shape[0] * 5 / numRecords))
 
+    numFrames = int(np.ceil(Aline_coords.shape[0] * 5 / numRecords))
 
     with open(file_path, 'rb') as f:
         daqData = np.fromfile(f, dtype=np.uint16,
