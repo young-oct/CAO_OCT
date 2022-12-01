@@ -162,5 +162,5 @@ def complex2int(Aline_vol):
     :param Aline_vol: 3D array
     :return: normalized to [0,1] intensity volume
     """
-    mag_vol = 20 * np.log10(abs(Aline_vol))
+    mag_vol = abs(Aline_vol)
     return (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)

@@ -17,6 +17,7 @@ import glob
 import numpy as np
 import matplotlib.gridspec as gridspec
 
+
 class optimization:
     def __init__(self, loss_function,
                  a,
@@ -175,8 +176,8 @@ def normalize_image(img_target):
 
 
 def apply_wavefront(img_target=None, z_poly=None):
-    # return ifft2(fft2(img_target) * fftshift(z_poly))
-    return ifft2(fft2(img_target) * z_poly)
+    return ifft2(fft2(img_target) * fftshift(z_poly))
+    # return ifft2(fft2(img_target) * z_poly)
 
 
 def zernike_index(j=None, k=None):
@@ -276,7 +277,8 @@ def image_entropy(img_target=None):
     :return: entropy of the image
     """
 
-    temp_img = complex2int(img_target)
+    temp_img = ndimage.median_filter(complex2int(img_target), size=3)
+
     entropy = 0
     for i in range(temp_img.shape[0]):
         for j in range(temp_img.shape[1]):
@@ -302,10 +304,15 @@ def square_crop(image):
     raduis = image.shape[0] // 2
     x_c, y_c = image.shape[0] // 2, image.shape[1] // 2
 
-    lenght = int(raduis/np.sqrt(2))
+    lenght = int(raduis / np.sqrt(2))
 
     return image[int(x_c - lenght):int(x_c + lenght),
-          int(y_c - lenght):int(y_c + lenght)]
+           int(y_c - lenght):int(y_c + lenght)]
+
+
+def inten2pixel(image):
+    temp = 20 * np.log10(abs(image))
+    return (temp - np.min(temp)) / np.ptp(temp)
 
 
 if __name__ == '__main__':
@@ -337,18 +344,19 @@ if __name__ == '__main__':
 
     idx = int(np.mean(z_idx))
 
-    ab_img = square_crop(Aline_vol[:, :, idx])
+    # ab_img = square_crop(Aline_vol[:, :, idx])
+
+    ab_img = Aline_vol[:, :, idx]
     #
-    no_terms = 4
+    no_terms = 3
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    A_initial *= np.random.randint(10)
+    # A_initial *= np.random.randint(10)
 
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    #
-    alpha_val, gamma_val = 0.05, 0.05
+    alpha_val, gamma_val = 2, 0.05
     tolerance = gamma_val / 100
 
     optimizer = optimization(loss_function=cost_func,
@@ -360,20 +368,6 @@ if __name__ == '__main__':
                              zernike=Zo,
                              momentum=0.15,
                              cal_tolerance=tolerance)
-    #
-    abb_img = aberrate(ab_img, A_initial)
-    #
-    # fig, ax = plt.subplots(1, 3, figsize=(16, 9))
-    # ax[0].imshow(complex2int(ab_img))
-    #
-    # abb_img = aberrate(ab_img, A_initial)
-    # ax[1].imshow(complex2int(abb_img))
-    #
-    # cor = correct_image(abb_img, A_initial)
-    # ax[2].imshow(complex2int(cor))
-    # plt.show()
-    #
-    # print('done')
 
     optimizer_types = ['spgd', 'spgd-momentum', 'spgd-adam', 'spsa']
     optimizer_type = optimizer_types[2]
@@ -390,7 +384,8 @@ if __name__ == '__main__':
     ax1 = plt.subplot(gs[0, 0:2])
     p_factor = 0.55
 
-    ax1.imshow(complex2int(ab_img), vmin=p_factor, vmax=1)
+    ax1.imshow(ndimage.median_filter(inten2pixel(ab_img), size=3), vmin=p_factor, vmax=1)
+
     ax1.axis('off')
     ax1.set_title('aberrant image')
 
@@ -398,13 +393,13 @@ if __name__ == '__main__':
 
     cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
 
-    ax2.imshow(complex2int(cor_img), vmin=p_factor, vmax=1)
+    ax2.imshow(ndimage.median_filter(inten2pixel(cor_img), size=3), vmin=p_factor, vmax=1)
     ax2.axis('off')
     ax2.set_title('corrected image')
 
     ax3 = plt.subplot(gs[0, 4:6])
 
-    ax3.imshow(complex2int(ab_img - cor_img), vmin=p_factor, vmax=1)
+    ax3.imshow(ndimage.median_filter(inten2pixel(ab_img - cor_img), size=3), vmin=p_factor, vmax=1)
     ax3.axis('off')
     ax3.set_title('difference image')
 
@@ -425,10 +420,9 @@ if __name__ == '__main__':
     ax5.set_ylabel('cost function values')
 
     fig.suptitle('%s based computational adaptive optics(CAO)\n'
-                 'solution found at iteration %d' % (optimizer_type, sol_idx))
+                 'learning rate: %.2f; perturbation amount:%.2f \n'
+                 'solution found at iteration %d' % (optimizer_type,alpha_val, gamma_val,sol_idx))
 
     plt.tight_layout()
     plt.show()
     print('done')
-
-
