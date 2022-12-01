@@ -1,3 +1,5 @@
+import time
+
 from tools.spiral_loader import loader, complex2int
 from scipy import ndimage
 import matplotlib
@@ -9,6 +11,7 @@ import matplotlib.pyplot as plt
 import glob
 import numpy as np
 import matplotlib.gridspec as gridspec
+import time
 
 class optimization:
     def __init__(self, loss_function,
@@ -317,6 +320,7 @@ if __name__ == '__main__':
         }
     )
 
+    start_time = time.time()
     folder_path = '../data/Ossiview complex/*.bin'
     file_path = natsorted(glob.glob(folder_path))
 
@@ -337,25 +341,23 @@ if __name__ == '__main__':
     idx = int(np.mean(z_idx))
 
     ab_img = square_crop(Aline_vol[:, :, idx])
-
-    ab_img = Aline_vol[:, :, idx]
     #
-    no_terms = 6
+    no_terms = 4
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    # A_initial *= np.random.randint(10)
+    A_initial *= np.random.randint(10)
 
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    alpha_val, gamma_val = 0.1, 0.05
+    alpha_val, gamma_val = 0.1, 0.025
     tolerance = gamma_val / 100
 
     optimizer = optimization(loss_function=cost_func,
                              a=9e-1, c=1.0,
                              alpha_val=alpha_val,
                              gamma_val=gamma_val,
-                             max_iter=1000,
+                             max_iter=500,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,
@@ -417,4 +419,5 @@ if __name__ == '__main__':
 
     plt.tight_layout()
     plt.show()
-    print('done')
+    end_time = time.time()
+    print('CAO was done in %.2f min' % (end_time-start_time)/60)
