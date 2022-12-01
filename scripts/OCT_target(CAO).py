@@ -341,7 +341,7 @@ if __name__ == '__main__':
     no_terms = 6
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    A_initial *= np.random.randint(10)
+    A_initial *= np.random.randint(1,5)
 
     Zo = construct_zernike(A_initial, N=512)
 

@@ -342,10 +342,10 @@ if __name__ == '__main__':
 
     ab_img = square_crop(Aline_vol[:, :, idx])
     #
-    no_terms = 4
+    no_terms = 8
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    A_initial *= np.random.randint(5)
+    A_initial *= np.random.randint(1,5)
 
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
