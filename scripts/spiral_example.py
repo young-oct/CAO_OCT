@@ -225,7 +225,7 @@ def construct_zernike(z, N=512):
     theta = np.arctan2(y, x)
 
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = zernike(int((i + 3) + 1), r, theta)
+        W_values[:, :, i] = zernike(int((i + 2) + 1), r, theta)
 
     return W_values
 
@@ -345,7 +345,7 @@ if __name__ == '__main__':
     no_terms = 4
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    A_initial *= np.random.randint(10)
+    A_initial *= np.random.randint(5)
 
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
