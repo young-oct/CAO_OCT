@@ -350,7 +350,7 @@ if __name__ == '__main__':
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    alpha_val, gamma_val = 0.1, 0.025
+    alpha_val, gamma_val = 0.2, 0.05
     tolerance = gamma_val / 100
 
     optimizer = optimization(loss_function=cost_func,
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     gs = gridspec.GridSpec(2, 6)
 
     ax1 = plt.subplot(gs[0, 0:2])
-    p_factor = 0.55
+    p_factor = 0.5
 
     ax1.imshow(ndimage.median_filter(inten2pixel(ab_img), size=3), vmin=p_factor, vmax=1)
 
@@ -414,10 +414,12 @@ if __name__ == '__main__':
     ax5.set_ylabel('cost function values')
 
     fig.suptitle('%s based computational adaptive optics(CAO)\n'
-                 'learning rate: %.2f; perturbation amount:%.2f \n'
+                 'learning rate: %.2f; perturbation amount:%.3f \n'
                  'solution found at iteration %d' % (optimizer_type,alpha_val, gamma_val,sol_idx))
 
     plt.tight_layout()
     plt.show()
     end_time = time.time()
-    print('CAO was done in %.2f min' % (end_time-start_time)/60)
+
+    proc_time = (end_time-start_time)/60
+    print('CAO was done in %.2f min' % proc_time)
