@@ -343,7 +343,7 @@ if __name__ == '__main__':
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
     A_initial *= np.random.randint(10)
-    #
+
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
@@ -355,83 +355,80 @@ if __name__ == '__main__':
                              a=9e-1, c=1.0,
                              alpha_val=alpha_val,
                              gamma_val=gamma_val,
-                             max_iter=500,
+                             max_iter=100,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,
                              cal_tolerance=tolerance)
     #
     abb_img = aberrate(ab_img, A_initial)
-
-    fig, ax = plt.subplots(1, 3, figsize=(16, 9))
-    ax[0].imshow(complex2int(ab_img))
-
-    abb_img = aberrate(ab_img, A_initial)
-    ax[1].imshow(complex2int(abb_img))
-
-    cor = correct_image(abb_img, A_initial)
-    ax[2].imshow(complex2int(cor))
-    plt.show()
-
-    plt.show()
-
-    # optimizer_types = ['spgd', 'spgd-momentum', 'spgd-adam', 'spsa']
     #
-    # optimizer_type = optimizer_types[2]
+    # fig, ax = plt.subplots(1, 3, figsize=(16, 9))
+    # ax[0].imshow(complex2int(ab_img))
     #
-    # A_estimate, costval, sol_idx = optimizer.minimizer(current_Aw=A_initial,
-    #                                                    optimizer_type=optimizer_type,
-    #                                                    beta1=0.9,
-    #                                                    beta2=0.99,
-    #                                                    verbose=False)
+    # abb_img = aberrate(ab_img, A_initial)
+    # ax[1].imshow(complex2int(abb_img))
     #
-    # img_cor = correct_image(ab_img, A_estimate)
-    #
-    # fig = plt.figure(figsize=([16, 9]))
-    # gs = gridspec.GridSpec(2, 6)
-    #
-    # ax1 = plt.subplot(gs[0, 0:2])
-    # p_factor = 0.55
-    #
-    # ax1.imshow(complex2int(ab_img), vmin=p_factor, vmax=1)
-    # ax1.axis('off')
-    # ax1.set_title('aberrant image')
-    #
-    # ax2 = plt.subplot(gs[0, 2:4])
-    #
-    # cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
-    #
-    # ax2.imshow(complex2int(cor_img), vmin=p_factor, vmax=1)
-    # ax2.axis('off')
-    # ax2.set_title('corrected image')
-    #
-    # ax3 = plt.subplot(gs[0, 4:6])
-    #
-    # ax3.imshow(complex2int(ab_img - cor_img), vmin=p_factor, vmax=1)
-    # ax3.axis('off')
-    # ax3.set_title('difference image')
-    #
-    # x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
-    #
-    # ax4 = plt.subplot(gs[1, 0:3])
-    #
-    # ax4.bar(x_axis - 0.15, A_initial.squeeze(), width=0.15, label='initial guess')
-    # ax4.bar(x_axis, A_estimate.squeeze(), width=0.15, label='estimated value')
-    # ax4.legend(loc='best')
-    # ax4.set_xlabel('zernike terms')
-    # ax4.set_ylabel('numerical values')
-    #
-    # ax5 = plt.subplot(gs[1, 3:6])
-    #
-    # ax5.plot(np.arange(len(costval)), costval)
-    # ax5.set_xlabel('iterations')
-    # ax5.set_ylabel('cost function values')
-    #
-    # fig.suptitle('%s based computational adaptive optics(CAO)\n'
-    #              'solution found at iteration %d' % (optimizer_type, sol_idx))
-    #
-    # plt.tight_layout()
+    # cor = correct_image(abb_img, A_initial)
+    # ax[2].imshow(complex2int(cor))
     # plt.show()
+    #
     # print('done')
+
+    optimizer_types = ['spgd', 'spgd-momentum', 'spgd-adam', 'spsa']
+    optimizer_type = optimizer_types[2]
     #
-    #
+    A_estimate, costval, sol_idx = optimizer.minimizer(current_Aw=A_initial,
+                                                       optimizer_type=optimizer_type,
+                                                       beta1=0.9,
+                                                       beta2=0.99,
+                                                       verbose=False)
+    img_cor = correct_image(ab_img, A_estimate)
+    fig = plt.figure(figsize=([16, 9]))
+    gs = gridspec.GridSpec(2, 6)
+
+    ax1 = plt.subplot(gs[0, 0:2])
+    p_factor = 0.55
+
+    ax1.imshow(complex2int(ab_img), vmin=p_factor, vmax=1)
+    ax1.axis('off')
+    ax1.set_title('aberrant image')
+
+    ax2 = plt.subplot(gs[0, 2:4])
+
+    cor_img = correct_image(img_target=ab_img, cor_coes=A_estimate)
+
+    ax2.imshow(complex2int(cor_img), vmin=p_factor, vmax=1)
+    ax2.axis('off')
+    ax2.set_title('corrected image')
+
+    ax3 = plt.subplot(gs[0, 4:6])
+
+    ax3.imshow(complex2int(ab_img - cor_img), vmin=p_factor, vmax=1)
+    ax3.axis('off')
+    ax3.set_title('difference image')
+
+    x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
+
+    ax4 = plt.subplot(gs[1, 0:3])
+
+    ax4.bar(x_axis - 0.15, A_initial.squeeze(), width=0.15, label='initial guess')
+    ax4.bar(x_axis, A_estimate.squeeze(), width=0.15, label='estimated value')
+    ax4.legend(loc='best')
+    ax4.set_xlabel('zernike terms')
+    ax4.set_ylabel('numerical values')
+
+    ax5 = plt.subplot(gs[1, 3:6])
+
+    ax5.plot(np.arange(len(costval)), costval)
+    ax5.set_xlabel('iterations')
+    ax5.set_ylabel('cost function values')
+
+    fig.suptitle('%s based computational adaptive optics(CAO)\n'
+                 'solution found at iteration %d' % (optimizer_type, sol_idx))
+
+    plt.tight_layout()
+    plt.show()
+    print('done')
+
+
