@@ -255,7 +255,7 @@ def construct_zernike(z, N=512):
     theta = np.arctan2(y, x)
 
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = zernike(int((i + 3) + 1), r, theta)
+        W_values[:, :, i] = zernike(int((i + 2) + 1), r, theta)
 
     return W_values
 

@@ -176,11 +176,11 @@ if __name__ == "__main__":
 
     optimizer = optimization(loss_function=calc_loss,
                              a=9e-1, c=1.0,
-                             alpha_val=0.01,
-                             gamma_val=1,
+                             alpha_val=0.75,
+                             gamma_val=0.02,
                              # alpha_val=0.602,
                              # gamma_val=0.101,
-                             max_iter=1000,
+                             max_iter=200,
                              momentum=0.15,
                              cal_tolerance=tolerance,
                              args=(x, y))

@@ -229,7 +229,7 @@ def construct_zernike(z, N=512):
     theta = np.arctan2(y, x)
 
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = zernike(int((i + 3) + 1), r, theta)
+        W_values[:, :, i] = zernike(int((i + 2) + 1), r, theta)
 
     return W_values
 
@@ -319,14 +319,9 @@ if __name__ == '__main__':
 
     optimizer = optimization(loss_function=cost_func,
                              a=9e-1, c=1.0,
-                             # alpha_val=0.3,
-                             # gamma_val=0.01,
-                             # alpha_val = 0.5,
-                             # gamma_val = 0.01,
-
-                             alpha_val = 0.1,
-                             gamma_val = 0.005,
-                             max_iter=1000,
+                             alpha_val = 0.75,
+                             gamma_val = 0.02,
+                             max_iter=100,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,
