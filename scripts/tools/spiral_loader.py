@@ -9,8 +9,6 @@ import numpy as np
 import struct
 from scipy.fft import fft, ifft, rfft, irfft
 from scipy import signal
-from numba import njit
-
 
 def AverageAlineGroups(alineData, navg=5):
     # Calculate the complex average within groups
