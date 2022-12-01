@@ -1,22 +1,14 @@
 from tools.spiral_loader import loader, complex2int
-import matplotlib
-from matplotlib import pyplot as plt
-import numpy as np
-from natsort import natsorted
-import glob
-from scipy import signal, ndimage
+from scipy import ndimage
 import matplotlib
 from natsort import natsorted
-import discorpy.prep.preprocessing as prep
 import copy
 from scipy.special import gamma
 from scipy.fftpack import fftshift, fft2, ifft2
 import matplotlib.pyplot as plt
-import cv2 as cv
 import glob
 import numpy as np
 import matplotlib.gridspec as gridspec
-
 
 class optimization:
     def __init__(self, loss_function,
@@ -344,11 +336,11 @@ if __name__ == '__main__':
 
     idx = int(np.mean(z_idx))
 
-    # ab_img = square_crop(Aline_vol[:, :, idx])
+    ab_img = square_crop(Aline_vol[:, :, idx])
 
     ab_img = Aline_vol[:, :, idx]
     #
-    no_terms = 3
+    no_terms = 6
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
     # A_initial *= np.random.randint(10)
@@ -356,14 +348,14 @@ if __name__ == '__main__':
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    alpha_val, gamma_val = 2, 0.05
+    alpha_val, gamma_val = 0.1, 0.05
     tolerance = gamma_val / 100
 
     optimizer = optimization(loss_function=cost_func,
                              a=9e-1, c=1.0,
                              alpha_val=alpha_val,
                              gamma_val=gamma_val,
-                             max_iter=100,
+                             max_iter=1000,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,
