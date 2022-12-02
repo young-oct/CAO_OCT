@@ -7,7 +7,6 @@
 import numpy as np
 from scipy.special import gamma
 from scipy.fftpack import fftshift, fft2, ifft2
-from .spiral_loader import complex2int
 from scipy import ndimage
 
 class optimization:
@@ -222,7 +221,7 @@ def construct_zernike(z, N=512):
     theta = np.arctan2(y, x)
 
     for i in range(z.shape[-1]):
-        W_values[:, :, i] = zernike(int((i + 2) + 1), r, theta)
+        W_values[:, :, i] = zernike(int((i + 3) + 1), r, theta)
 
     return W_values
 
@@ -271,7 +270,8 @@ def image_entropy(img_target=None):
     :return: entropy of the image
     """
 
-    temp_img = ndimage.median_filter(complex2int(img_target), size=3)
+    # temp_img = ndimage.median_filter(complex2int(img_target), size=3)
+    temp_img = ndimage.median_filter(abs(img_target), size=3)
 
     entropy = 0
     for i in range(temp_img.shape[0]):
@@ -308,3 +308,12 @@ def inten2pixel(image):
     temp = 20 * np.log10(abs(image))
     return (temp - np.min(temp)) / np.ptp(temp)
 
+
+def complex2int(Aline_vol):
+    """
+    converts complex volume into intensity volume for imshow
+    :param Aline_vol: 3D array
+    :return: normalized to [0,1] intensity volume
+    """
+    mag_vol = abs(Aline_vol)
+    return (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)

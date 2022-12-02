@@ -156,11 +156,3 @@ def loader(file_path, radius=128, top=30):
 
     return vol / np.linalg.norm(vol)
 
-def complex2int(Aline_vol):
-    """
-    converts complex volume into intensity volume for imshow
-    :param Aline_vol: 3D array
-    :return: normalized to [0,1] intensity volume
-    """
-    mag_vol = abs(Aline_vol)
-    return (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)
