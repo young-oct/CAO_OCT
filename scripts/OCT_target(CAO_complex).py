@@ -45,20 +45,20 @@ if __name__ == '__main__':
     no_terms = 4
 
     A_initial = copy.deepcopy(cao.load_zernike_coefficients(no_terms=no_terms,
-                                                        A_true_flat=False, repeat=True))
+                                                        A_true_flat=False, repeat=False))
 
 
     Zo = cao.construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    alpha_val, gamma_val = 0.025, 0.05
+    alpha_val, gamma_val = 0.05, 0.05
     tolerance = gamma_val / 100
 
     optimizer = cao.optimization(loss_function=cao.cost_func,
                              a=9e-1, c=1.0,
                              alpha_val=alpha_val,
                              gamma_val=gamma_val,
-                             max_iter=100,
+                             max_iter=1000,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,

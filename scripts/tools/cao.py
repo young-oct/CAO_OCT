@@ -7,7 +7,6 @@
 import numpy as np
 from scipy.special import gamma
 from scipy.fftpack import fftshift, fft2, ifft2
-from scipy import ndimage
 
 class optimization:
     def __init__(self, loss_function,
@@ -69,8 +68,6 @@ class optimization:
         adam_m = 0
         adam_v = 0
 
-        # previous_ghat = 0
-
         while k < self.max_iter and \
                 np.linalg.norm(previous_Aw - current_Aw) > self.cal_tolerance:
 
@@ -97,13 +94,8 @@ class optimization:
             loss_delta = (loss_plus - loss_minus) / 2
             g_hat = loss_delta * delta
 
-            # compute the estimate of the gradient
-            # g_hat = loss_delta * delta
-            # delta_g = g_hat - previous_ghat
-            # print(k,g_hat, delta_g/delta)
-            # print((k,np.diff((g_hat - previous_ghat),delta)))
 
-            # previous_ghat = g_hat
+
             # # update the estimate of the parameter
             if optimizer_type == 'spgd':
 
@@ -147,7 +139,6 @@ class optimization:
 
         sol_idx = np.argmin(cost_func_val)
         Aw_estimate = Aw_values[sol_idx]
-        # print('optimal solution is found at %d iteration' % sol_idx)
 
         return Aw_estimate, cost_func_val, sol_idx
 
@@ -168,7 +159,6 @@ def normalize_image(img_target):
 
 def apply_wavefront(img_target=None, z_poly=None):
     return ifft2(fft2(img_target) * fftshift(z_poly))
-    # return ifft2(fft2(img_target) * z_poly)
 
 
 def zernike_index(j=None, k=None):
@@ -270,8 +260,7 @@ def image_entropy(img_target=None):
     :return: entropy of the image
     """
 
-    # temp_img = ndimage.median_filter(complex2int(img_target), size=3)
-    temp_img = ndimage.median_filter(abs(img_target), size=3)
+    temp_img = complex2int(img_target)
 
     entropy = 0
     for i in range(temp_img.shape[0]):
@@ -307,6 +296,7 @@ def square_crop(image):
 def inten2pixel(image):
     temp = 20 * np.log10(abs(image))
     return (temp - np.min(temp)) / np.ptp(temp)
+    # return temp/np.linalg.norm(temp)
 
 
 def complex2int(Aline_vol):
@@ -317,3 +307,4 @@ def complex2int(Aline_vol):
     """
     mag_vol = abs(Aline_vol)
     return (mag_vol - np.min(mag_vol)) / np.ptp(mag_vol)
+    # return mag_vol/np.linalg.norm(mag_vol)
