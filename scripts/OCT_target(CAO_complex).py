@@ -1,4 +1,4 @@
-from tools.spiral_loader import loader, complex2int
+from tools.spiral_loader import loader
 from scipy import ndimage
 import matplotlib
 from natsort import natsorted
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     Aline_vol = loader(file_path[-1], radius=256)
 
-    norm_vol = complex2int(Aline_vol)
+    norm_vol = cao.complex2int(Aline_vol)
 
     c_idx = norm_vol.shape[0] // 2
     center_slice = norm_vol[:, c_idx, :]
