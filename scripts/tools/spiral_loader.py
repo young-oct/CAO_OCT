@@ -7,7 +7,7 @@
 
 import numpy as np
 import struct
-from scipy.fft import fft, ifft, rfft, irfft
+from scipy.fft import rfft
 from scipy import signal
 
 def AverageAlineGroups(alineData, navg=5):
