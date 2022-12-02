@@ -250,6 +250,8 @@ def load_zernike_coefficients(no_terms, A_true_flat, repeat=False):
     else:
         np.random.seed(2022)
         A = np.random.random(size=no_terms)
+        factor = np.random.randint(1, 5)
+        A = A*factor
 
     return A
 
@@ -320,7 +322,6 @@ if __name__ == '__main__':
         }
     )
 
-    start_time = time.time()
     folder_path = '../data/Ossiview complex/*.bin'
     file_path = natsorted(glob.glob(folder_path))
 
@@ -340,17 +341,19 @@ if __name__ == '__main__':
 
     idx = int(np.mean(z_idx))
 
+    start_time = time.time()
     ab_img = square_crop(Aline_vol[:, :, idx])
     #
-    no_terms = 8
+    no_terms = 5
+
     A_initial = copy.deepcopy(load_zernike_coefficients(no_terms=no_terms,
                                                         A_true_flat=False, repeat=True))
-    A_initial *= np.random.randint(1,5)
+
 
     Zo = construct_zernike(A_initial, N=ab_img.shape[0])
     # # alpha_val is the learning rate
     # # gamma_val is the perturbation amount rate
-    alpha_val, gamma_val = 0.2, 0.05
+    alpha_val, gamma_val = 0.025, 0.05
     tolerance = gamma_val / 100
 
     optimizer = optimization(loss_function=cost_func,
@@ -414,7 +417,7 @@ if __name__ == '__main__':
     ax5.set_ylabel('cost function values')
 
     fig.suptitle('%s based computational adaptive optics(CAO)\n'
-                 'learning rate: %.2f; perturbation amount:%.3f \n'
+                 'learning rate: %.3f; perturbation amount:%.3f \n'
                  'solution found at iteration %d' % (optimizer_type,alpha_val, gamma_val,sol_idx))
 
     plt.tight_layout()
