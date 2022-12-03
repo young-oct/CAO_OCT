@@ -58,7 +58,7 @@ if __name__ == '__main__':
                              a=9e-1, c=1.0,
                              alpha_val=alpha_val,
                              gamma_val=gamma_val,
-                             max_iter=1000,
+                             max_iter=200,
                              img_target=ab_img,
                              zernike=Zo,
                              momentum=0.15,
