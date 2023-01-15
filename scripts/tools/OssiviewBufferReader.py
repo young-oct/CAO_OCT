@@ -7,8 +7,8 @@ Created on Wed Oct 16 10:41:50 2019
 
 import numpy as np
 import yaml
-from scripts.tools import OssiviewDataHeader
-from scripts.tools.OssiviewDataHeader import OssiviewDataHeader
+from tools import OssiviewDataHeader
+from tools.OssiviewDataHeader import OssiviewDataHeader
 
 class OssiviewBufferReader:
     def __init__(self, filePath):

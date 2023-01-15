@@ -11,10 +11,10 @@ from scipy import ndimage
 from skimage.morphology import (square, rectangle, diamond, disk, cube,
                                 octahedron, ball, octagon, star)
 import os
-from scripts.tools.proc import clean_removal,circle_cut,despecking
-from scripts.tools.pos_proc import imag2uint,convert
+from tools.proc import clean_removal,circle_cut,despecking
+from tools.pos_proc import imag2uint,convert
 import numpy as np
-from scripts.tools.OssiviewBufferReader import OssiviewBufferReader
+from tools.OssiviewBufferReader import OssiviewBufferReader
 
 def folder_creator(folder_path):
     try:

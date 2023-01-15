@@ -21,7 +21,7 @@ Opt. Express 28, 23306-23319 (2020)
 from scipy.special import gamma
 from numpy.fft import fftshift, ifftshift, fft2, ifft2
 from scipy.fftpack import fftshift, ifftshift, fft2, ifft2
-from scripts.tools.plot import *
+from tools.plot import *
 import numpy as np
 from sklearn import preprocessing
 from skimage.util import random_noise
