@@ -11,8 +11,19 @@ import glob
 import numpy as np
 import matplotlib.gridspec as gridspec
 from tools import cao
+import matplotlib
+import string
 
 if __name__ == '__main__':
+    matplotlib.rcParams.update(
+        {
+            'font.size': 15,
+            'text.usetex': False,
+            'font.family': 'sans-serif',
+            'mathtext.fontset': 'stix',
+        }
+    )
+    text_al = string.ascii_lowercase[1:6]
     no_terms = 6
     A_true = cao.load_zernike_coefficients(no_terms=no_terms,
                                        A_true_flat=True)
@@ -25,7 +36,7 @@ if __name__ == '__main__':
     ab_img = cao.aberrate(img_gray, A_true)
 
     Zo = cao.construct_zernike(A_true, N=512)
-    tolerance = 1e-4
+    tolerance = 1e-5
 
     optimizer = cao.optimization(loss_function=cao.cost_func,
                              a=9e-1, c=1.0,
@@ -40,7 +51,9 @@ if __name__ == '__main__':
     optimizer_types = ['spgd','spgd-momentum','spgd-adam','spsa']
     # optimizer_types = ['spgd', 'spgd-momentum', 'spgd-adam']
 
-    for i in range(len(optimizer_types)):
+    # for i in range(len(optimizer_types)):
+    for i in range(1):
+
         optimizer_type = optimizer_types[i]
         A_initial = copy.deepcopy(cao.load_zernike_coefficients(no_terms=no_terms,
                                                             A_true_flat=False, repeat=True))
@@ -61,18 +74,18 @@ if __name__ == '__main__':
         ax1 = plt.subplot(gs[0, 0:2])
         ax1.imshow(cao.normalize_image(img_gray), vmin=0, vmax=1)
         ax1.axis('off')
-        ax1.set_title('original image')
+        ax1.set_title('('+text_al[0]+')'+' original image')
 
         ax2 = plt.subplot(gs[0, 2:4])
         ax2.imshow(cao.normalize_image(ab_img), vmin=0, vmax=1)
         ax2.axis('off')
-        ax2.set_title('aberrant image')
+        ax2.set_title('('+text_al[1]+')'+' aberrant image')
 
         ax3 = plt.subplot(gs[0, 4:6])
         cor_img = cao.correct_image(img_target=ab_img, cor_coes=A_estimate)
         ax3.imshow(cao.normalize_image(cor_img), vmin=0, vmax=1)
         ax3.axis('off')
-        ax3.set_title('corrected image')
+        ax3.set_title('('+text_al[2]+')'+' corrected image')
 
         x_axis = np.linspace(0, A_estimate.shape[-1], A_estimate.shape[-1])
         ax4 = plt.subplot(gs[1, 0:3])
@@ -82,15 +95,25 @@ if __name__ == '__main__':
         ax4.legend(loc='best')
         ax4.set_xlabel('zernike terms')
         ax4.set_ylabel('numerical values')
+        ax4.set_title('('+text_al[3]+')'+' introduced and computed Zernike polynomials coefficients')
+
 
         ax5 = plt.subplot(gs[1, 3:6])
         ax5.plot(np.arange(len(costval)), costval)
         ax5.set_xlabel('iterations')
+        ax5.set_title('('+text_al[4]+')'+' residual error during the correction process')
         ax5.set_ylabel('cost function values')
 
-        fig.suptitle('%s based computational adaptive optics(CAO)\n'
-                     'solution found at iteration %d with a discrepancy of %.4f' % (
-                         optimizer_type, sol_idx, discrepancy))
+        # fig.suptitle('%s based computational adaptive optics(CAO)\n'
+        #              'solution found at iteration %d with a discrepancy of %.4f' % (
+        #                  optimizer_type, sol_idx, discrepancy))
+
 
         plt.tight_layout()
+        plt.savefig('/Users/youngwang/Desktop/Master/Thesis'
+                    '/Figure/Chapter 4/4.3 Optical aberration'
+                    '/4.3 Optical aberration simulation.pdf', dpi=600,
+                    format='pdf',
+                    bbox_inches='tight', pad_inches=0,
+                    facecolor='auto', edgecolor='auto')
         plt.show()
